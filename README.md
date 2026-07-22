@@ -6,7 +6,7 @@ A L T E R . is developed through short learning cycles in which product usage, b
 
 `WP-006 — Learning Release 001 Implementation`
 
-The canonical foundation, Product, Design, Data, and Engineering work packages are complete. Implementation begins with `P01 — Repository Scaffold`.
+The canonical foundation, Product, Design, Data, and Engineering work packages are complete. P03 local Supabase tooling is configured but awaits Docker-based validation.
 
 ## Operating rule
 
@@ -39,6 +39,7 @@ Requirements:
 
 - Node.js 20.9 or newer.
 - npm 10 or newer.
+- Docker Desktop (or another Docker-compatible engine) running locally.
 
 Create local environment values and install dependencies:
 
@@ -55,23 +56,57 @@ The health page is available at `http://localhost:3000` and displays
 configuration. `SUPABASE_SERVICE_ROLE_KEY` is server-only and must never use the
 `NEXT_PUBLIC_` prefix or be imported through the browser environment module.
 
+### Local Supabase
+
+Install dependencies, start the local stack, and inspect its generated local-only
+credentials:
+
+```bash
+npm install
+npm run supabase:bootstrap
+npm run supabase:status
+```
+
+Copy `.env.example` to the Git-ignored `.env.local`, then replace the key
+placeholders with the local anon and service-role keys printed by status. Never
+commit those generated credentials. The canonical local endpoints are:
+
+| Service       | Local URL/port           |
+| ------------- | ------------------------ |
+| Application   | `http://127.0.0.1:3000`  |
+| Supabase API  | `http://127.0.0.1:54321` |
+| PostgreSQL    | `127.0.0.1:54322`        |
+| Studio        | `http://127.0.0.1:54323` |
+| Email capture | `http://127.0.0.1:54324` |
+
+These are the Supabase CLI defaults and are committed in `supabase/config.toml`.
+Use `npm run supabase:stop` when finished and `npm run supabase:reset` to rebuild
+the local database from committed migrations and the intentionally empty P03 seed.
+All scripts are local-only and do not link or target a remote project.
+
 ## Commands
 
-| Command                | Purpose                                     |
-| ---------------------- | ------------------------------------------- |
-| `npm run dev`          | Start the local Next.js development server. |
-| `npm run build`        | Create a production build.                  |
-| `npm run start`        | Serve the production build.                 |
-| `npm run format`       | Format supported files with Prettier.       |
-| `npm run format:check` | Check formatting without changing files.    |
-| `npm run lint`         | Run ESLint.                                 |
-| `npm run lint:fix`     | Apply safe ESLint fixes.                    |
-| `npm run typecheck`    | Run TypeScript without emitting files.      |
-| `npm run test`         | Run Vitest once.                            |
-| `npm run test:watch`   | Run Vitest in watch mode.                   |
-| `npm run test:e2e`     | Run Playwright Chromium tests.              |
-| `npm run test:e2e:ui`  | Open Playwright's interactive test UI.      |
-| `npm run check`        | Run all mandatory non-E2E validation gates. |
+| Command                      | Purpose                                                         |
+| ---------------------------- | --------------------------------------------------------------- |
+| `npm run dev`                | Start the local Next.js development server.                     |
+| `npm run build`              | Create a production build.                                      |
+| `npm run start`              | Serve the production build.                                     |
+| `npm run format`             | Format supported files with Prettier.                           |
+| `npm run format:check`       | Check formatting without changing files.                        |
+| `npm run lint`               | Run ESLint.                                                     |
+| `npm run lint:fix`           | Apply safe ESLint fixes.                                        |
+| `npm run typecheck`          | Run TypeScript without emitting files.                          |
+| `npm run test`               | Run Vitest once.                                                |
+| `npm run test:watch`         | Run Vitest in watch mode.                                       |
+| `npm run test:e2e`           | Run Playwright Chromium tests.                                  |
+| `npm run test:e2e:ui`        | Open Playwright's interactive test UI.                          |
+| `npm run supabase:bootstrap` | Verify prerequisites, start Supabase, and print setup guidance. |
+| `npm run supabase:start`     | Start the local Supabase stack.                                 |
+| `npm run supabase:stop`      | Stop the local Supabase stack.                                  |
+| `npm run supabase:status`    | Print local service status, URLs, and credentials.              |
+| `npm run supabase:reset`     | Reset the local database from committed sources.                |
+| `npm run supabase:db:lint`   | Lint the local database schema.                                 |
+| `npm run check`              | Run all mandatory non-E2E validation gates.                     |
 
 Playwright requires a local browser binary. Install Chromium when needed:
 
@@ -87,8 +122,8 @@ npx playwright install chromium
 - `src/test/mocks/` — MSW handlers and server lifecycle.
 - `src/test/fixtures/` — reusable test fixtures.
 - `tests/e2e/` — Playwright browser tests and accessibility checks.
-- `supabase/` — reserved for later Supabase packages; P01 contains no configuration or migrations.
-- `scripts/` — repository automation added by later packages.
+- `supabase/` — committed local configuration, migrations, seed, and database tests.
+- `scripts/` — repository automation, including the local Supabase bootstrap helper.
 
 ## Canonical implementation inputs
 

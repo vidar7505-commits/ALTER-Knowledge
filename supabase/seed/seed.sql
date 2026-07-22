@@ -1,0 +1,2 @@
+-- Intentionally empty for WP-006 P03.
+-- Domain seed data begins in the package that owns the corresponding schema.

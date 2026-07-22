@@ -27,3 +27,5 @@ debug.log
 /supabase/.branches/
 /supabase/.temp/
 /supabase/.env
+/supabase/.env.local
+/supabase/.cache/
