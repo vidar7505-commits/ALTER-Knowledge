@@ -33,6 +33,63 @@ Build the smallest professional product capable of generating real user behavior
 
 The source of truth for sequence and status is `00_HQ/ROADMAP.md`.
 
+## Local setup
+
+Requirements:
+
+- Node.js 20.9 or newer.
+- npm 10 or newer.
+
+Create local environment values and install dependencies:
+
+```bash
+cp .env.example .env.local
+npm install
+npm run dev
+```
+
+The health page is available at `http://localhost:3000` and displays
+`A L T E R . — LR-001 development environment`.
+
+`NEXT_PUBLIC_SUPABASE_URL` and `NEXT_PUBLIC_SUPABASE_ANON_KEY` are browser-safe
+configuration. `SUPABASE_SERVICE_ROLE_KEY` is server-only and must never use the
+`NEXT_PUBLIC_` prefix or be imported through the browser environment module.
+
+## Commands
+
+| Command                | Purpose                                     |
+| ---------------------- | ------------------------------------------- |
+| `npm run dev`          | Start the local Next.js development server. |
+| `npm run build`        | Create a production build.                  |
+| `npm run start`        | Serve the production build.                 |
+| `npm run format`       | Format supported files with Prettier.       |
+| `npm run format:check` | Check formatting without changing files.    |
+| `npm run lint`         | Run ESLint.                                 |
+| `npm run lint:fix`     | Apply safe ESLint fixes.                    |
+| `npm run typecheck`    | Run TypeScript without emitting files.      |
+| `npm run test`         | Run Vitest once.                            |
+| `npm run test:watch`   | Run Vitest in watch mode.                   |
+| `npm run test:e2e`     | Run Playwright Chromium tests.              |
+| `npm run test:e2e:ui`  | Open Playwright's interactive test UI.      |
+| `npm run check`        | Run all mandatory non-E2E validation gates. |
+
+Playwright requires a local browser binary. Install Chromium when needed:
+
+```bash
+npx playwright install chromium
+```
+
+## Repository boundaries
+
+- `src/app/` — Next.js routes and layouts.
+- `src/lib/validation/` — shared validation schemas.
+- `src/lib/environment/` — typed browser and server environment access.
+- `src/test/mocks/` — MSW handlers and server lifecycle.
+- `src/test/fixtures/` — reusable test fixtures.
+- `tests/e2e/` — Playwright browser tests and accessibility checks.
+- `supabase/` — reserved for later Supabase packages; P01 contains no configuration or migrations.
+- `scripts/` — repository automation added by later packages.
+
 ## Canonical implementation inputs
 
 Implementation agents must read the applicable canonical documents before modifying code. If a required input is unavailable, the agent must stop and report the missing path rather than infer the decision.
