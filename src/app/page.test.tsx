@@ -5,14 +5,26 @@ import { describe, expect, it } from 'vitest';
 import HomePage from './page';
 
 describe('HomePage', () => {
-  it('renders the product name', () => {
+  it('renders a non-product token verification surface and typography roles', () => {
     render(<HomePage />);
 
     expect(
       screen.getByRole('heading', {
-        name: 'A L T E R . — LR-001 development environment',
+        name: 'A L T E R . visual foundation',
       }),
     ).toBeVisible();
+    expect(screen.getByText(/token verification/i)).toBeVisible();
+    expect(
+      screen.getByRole('heading', { name: 'Typography roles' }),
+    ).toBeVisible();
+    expect(screen.getByText(/Ğğ İı Şş Çç Öö Üü/)).toBeVisible();
+    expect(
+      screen.getByRole('button', { name: /verify focus/i }),
+    ).toHaveAttribute('type', 'button');
+
+    expect(
+      screen.queryByText(/add to cart|buy now|wardrobe|challenge/i),
+    ).toBeNull();
   });
 
   it('has no detectable accessibility violations', async () => {
