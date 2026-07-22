@@ -1,0 +1,83 @@
+name: Database infrastructure validation
+
+on:
+  pull_request:
+    paths:
+      - 'supabase/**'
+      - 'scripts/supabase-*.mjs'
+      - '.github/workflows/database-validation.yml'
+      - 'package.json'
+      - 'package-lock.json'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: database-validation-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  validate:
+    name: Validate disposable local database
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Verify repository-local Supabase CLI
+        run: npx supabase --version
+
+      - name: Start disposable local Supabase stack
+        run: npx supabase start
+
+      - name: Reset database from committed sources
+        run: npx supabase db reset --local
+
+      - name: Lint database
+        run: npx supabase db lint --local --fail-on warning
+
+      - name: Detect database tests
+        id: database-tests
+        shell: bash
+        run: |
+          if find supabase/tests -type f -name '*.sql' -print -quit | grep -q .; then
+            echo "present=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "present=false" >> "$GITHUB_OUTPUT"
+            echo "No pgTAP SQL tests exist yet; database tests are deferred to P04 and later."
+          fi
+
+      - name: Run database tests
+        if: steps.database-tests.outputs.present == 'true'
+        run: npx supabase test db
+
+      - name: Check formatting
+        run: npm run format:check
+
+      - name: Lint application
+        run: npm run lint
+
+      - name: Typecheck application
+        run: npm run typecheck
+
+      - name: Run application unit tests
+        run: npm run test
+
+      - name: Build application
+        run: npm run build
+
+      - name: Stop disposable local Supabase stack
+        if: always()
+        run: npx supabase stop --no-backup
