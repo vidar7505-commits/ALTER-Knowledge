@@ -963,8 +963,8 @@ select is(
       select id
       from public.saved_products
       where product_id = '81300000-0000-4000-8000-000000000001'
-      order by saved_at desc
-      limit 1
+        and remove_operation_id =
+          '82600000-0000-4000-8000-000000000001'
     ),
     '82600000-0000-4000-8000-000000000001'
   ),
@@ -973,8 +973,8 @@ select is(
       select id
       from public.saved_products
       where product_id = '81300000-0000-4000-8000-000000000001'
-      order by saved_at desc
-      limit 1
+        and remove_operation_id =
+          '82600000-0000-4000-8000-000000000001'
     ),
     '82600000-0000-4000-8000-000000000001'
   ),
