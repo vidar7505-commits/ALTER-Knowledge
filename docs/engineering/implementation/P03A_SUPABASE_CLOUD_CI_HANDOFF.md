@@ -2,10 +2,10 @@
 
 ## Status
 
-Implementation complete with two external gates outstanding:
+Complete. Both external gates are closed:
 
-- `Cloud linkage pending`
-- `Configured but awaiting CI validation`
+- Cloud linkage: `Complete`
+- CI validation: `Complete`
 
 ## Completed output
 
@@ -52,6 +52,10 @@ settings. Linkage is never automated. The guarded status command compares the
 runtime reference (or its runtime-only SHA-256 hash) with ignored local link
 metadata and then uses `supabase migration list --linked`. It does not print the
 target value or any credential.
+
+External closure verification confirmed that development-project linkage and the
+guarded linked status command both succeeded. No project reference or credential
+value was recorded in this handoff.
 
 ## GitHub Actions workflow
 
@@ -106,7 +110,9 @@ default, and never reset the remote project automatically.
 - `npm run supabase:remote:push`
 
 All require runtime arguments documented in the repository README. No remote
-command was executed in P03A.
+command was executed during the original P03A implementation run. The later
+external closure verification executed the guarded linked status read. No domain
+migration deployment, remote reset, or seed push occurred.
 
 ## Tests added
 
@@ -143,19 +149,21 @@ fake test reference and code identifiers; no credential value was present.
 
 ## Actual CI-local validation status
 
-The workflow is structurally configured but has not run on GitHub:
-`Configured but awaiting CI validation`. This handoff does not claim that the
-GitHub-hosted Supabase stack, reset, lint, or cleanup has passed.
+`Complete`. The GitHub Actions `Database infrastructure validation` workflow
+completed successfully, verifying the GitHub-hosted disposable Supabase
+validation path. This workflow used local containers and no hosted-project
+credentials.
 
 ## Actual cloud-link status
 
-`Cloud linkage pending`. No trusted-terminal link or guarded remote status command
-was executed, ignored link metadata is absent, and this handoff does not claim
-successful linkage.
+`Complete`. Supabase cloud development-project linkage succeeded in a trusted
+terminal, and the guarded linked status command succeeded. The project reference
+and credentials remain outside the repository and this handoff.
 
 ## Migrations deployed
 
-None. P03A adds no domain migration and performs no remote push.
+None. P03A adds no domain migration, and no domain migrations were deployed. No
+remote reset or seed push occurred.
 
 ## Security observations
 
@@ -173,18 +181,18 @@ None. P03A adds no domain migration and performs no remote push.
 
 - Full local Supabase startup remains unreliable on the constrained workstation;
   GitHub Actions is the authoritative runtime for that validation.
-- The workflow is syntax-formatted and reviewed locally but cannot be proven on a
-  GitHub runner until it is pushed and run.
+- The workflow's authoritative GitHub Actions validation has passed; workstation
+  resource constraints remain unchanged.
 - No real database SQL tests exist yet, so the workflow correctly records the skip
   until P04 adds migration tests.
 
 ## Unresolved blockers
 
-- The user must complete and verify cloud linkage in a trusted terminal.
-- The database-validation workflow must pass once on GitHub.
+None for P04. Verified cloud linkage, guarded linked status, and the successful
+GitHub database validation workflow have unblocked `P04 — Core Migrations`.
 
 ## Recommended next package
 
-After recording both external gates, proceed to `P04 — Core Migrations`. Validate
-P04 migrations in the disposable local-container GitHub workflow before any
+Proceed to `P04 — Core Migrations`, which is now unblocked. Validate P04
+migrations in the disposable local-container GitHub workflow before any
 controlled dry run or deployment to hosted development.

@@ -6,11 +6,10 @@
 
 ## Status
 
-Implemented with external validation pending. Development-only cloud-link
-instructions, runtime target guards, and a disposable local-container GitHub
-database workflow are configured. The cloud project has not been linked in the
-trusted terminal, so status is `Cloud linkage pending`. The workflow has not run
-on GitHub, so status is `Configured but awaiting CI validation`.
+Complete. Development-only cloud linkage succeeded, including the guarded linked
+status check. The GitHub Actions `Database infrastructure validation` workflow
+also completed successfully against disposable local containers. No domain
+migrations were deployed, and no remote reset or seed push occurred.
 
 ## Implemented scope
 
@@ -33,12 +32,10 @@ on GitHub, so status is `Configured but awaiting CI validation`.
 - Domain schema, migrations, indexes, triggers, RLS, RPCs, and pgTAP tests.
 - Supabase clients, authentication behavior, telemetry, catalog, and product code.
 - Automated hosted migration deployment and every staging/production environment.
-- Cloud linkage, any remote schema operation, and every cloud credential value.
+- Any remote schema write operation and every cloud credential value.
 
 ## Next action
 
-Enter the development project reference directly in a trusted terminal to complete
-the documented link and guarded status check. Open a pull request or manually
-dispatch `database-validation.yml`; record its first successful GitHub run before
-closing P03A. Then proceed to `P04 — Core Migrations` without deploying any P03A
-schema.
+`P04 — Core Migrations` is unblocked. Proceed with P04 migration authoring and
+validate those migrations in the disposable local-container GitHub workflow
+before any separately reviewed, controlled deployment to hosted development.
