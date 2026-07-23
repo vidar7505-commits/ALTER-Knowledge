@@ -2,12 +2,14 @@
 
 ## Status
 
-`Configured but awaiting CI validation`.
+`Complete`.
 
-The LR-001 anonymous identity application boundary is implemented and all
-required application checks pass. A new identity-bootstrap migration and pgTAP
-suite were added, so P05 is not complete until the GitHub Actions
-`Database infrastructure validation` workflow passes with these changes.
+The LR-001 anonymous identity application boundary is implemented. The GitHub
+Actions `Database infrastructure validation` workflow passed after lockfile
+synchronization: `npm ci` succeeded, clean reset applied all five migrations,
+strict database lint passed, and all four pgTAP suites passed. Application
+formatting, ESLint, TypeScript, unit/integration tests, production build, and
+Playwright passed.
 
 Cloud migrations deployed: None.
 
@@ -246,6 +248,8 @@ runtime SQL validation.
 | `npx.cmd supabase db reset --local`                          | Blocked: Docker Desktop Linux-engine pipe `//./pipe/dockerDesktopLinuxEngine` was not found.                                                                                         |
 | `npx.cmd supabase db lint --local --fail-on warning`         | Blocked: `LegacyDbConnectError`; local PostgreSQL was unavailable.                                                                                                                   |
 | `npx.cmd supabase test db`                                   | Blocked: `LegacyDbConnectError`; local PostgreSQL was unavailable.                                                                                                                   |
+| CI `npm ci`                                                  | Passed after lockfile synchronization.                                                                                                                                               |
+| GitHub Actions `Database infrastructure validation`          | Passed: clean reset applied all five migrations; strict database lint and all four pgTAP suites passed.                                                                              |
 | `npm.cmd run format:check`                                   | Passed after Prettier was applied only to the new P05 provider and handoff; the first final check identified those two files.                                                        |
 | `git diff --check`                                           | Passed; Git emitted LF-to-CRLF working-copy warnings only.                                                                                                                           |
 
@@ -259,7 +263,13 @@ No unsafe Docker workaround was attempted. Tests and CI gates were not weakened.
 - Workstation-local database lint: blocked because local PostgreSQL is
   unavailable.
 - Workstation-local pgTAP: blocked because local PostgreSQL is unavailable.
-- GitHub Actions validation with P05: pending.
+- GitHub Actions validation with P05: passed.
+- CI dependency installation: passed after lockfile synchronization.
+- Clean database reset in CI: passed.
+- Migration application in CI: passed; all five migrations applied
+  successfully.
+- Strict database lint in CI: passed.
+- pgTAP in CI: passed; all four suites passed.
 - Hosted development schema updated: No.
 - Cloud migrations deployed: None.
 - Remote reset: not run.
@@ -307,7 +317,6 @@ surface was modified.
   credential capable of recovering that anonymous Auth identity.
 - When an invalid session cannot be refreshed, a new identity is created and
   replacement is reported; P05 does not merge the lost identity.
-- Database runtime validation is pending the Docker-capable GitHub workflow.
 - Full RLS activation, private-table SELECT policies, exhaustive two-user
   isolation, grants across the remaining schema, application-role immutability,
   and all non-bootstrap transactional RPCs remain P06.
@@ -338,10 +347,10 @@ surface was modified.
 
 ## Recommended next action
 
-Run the unchanged GitHub Actions `Database infrastructure validation` workflow.
-It must apply all five migrations on clean reset, pass strict database lint, and
-pass all four pgTAP suites. Only then mark P05 `Complete` and unblock P06 RLS/RPC
-Foundation. Hosted migration deployment remains a separate reviewed action.
+P06 — RLS and RPC Foundation is now unblocked. Proceed to P06 for broad RLS,
+private-table SELECT policies, exhaustive two-user isolation, remaining grants,
+application-role immutability, and non-bootstrap transactional RPCs. Hosted
+migration deployment remains a separate reviewed action.
 
 ## Suggested commit message
 
