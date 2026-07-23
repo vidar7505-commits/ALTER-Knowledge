@@ -6,7 +6,7 @@
 
 ## Status
 
-`Configured but awaiting CI validation`.
+`Complete`.
 
 The LR-001 authorization and transactional mutation foundation is implemented
 in two forward-only migrations. All 15 public domain tables have RLS enabled;
@@ -16,12 +16,13 @@ and private operation infrastructure are inaccessible. Eight transactional
 mutation RPCs derive ownership from `auth.uid()` and use a private operation
 ledger for deterministic idempotency and conflict rejection.
 
-Application formatting, ESLint, TypeScript, all 43 unit/integration tests,
-production build, Playwright, and `git diff --check` passed. The workstation
-cannot run the disposable Supabase stack because Docker Desktop's Linux-engine
-pipe is absent. Local reset, database lint, and pgTAP therefore remain blocked.
-P06 must not be marked Complete until the GitHub `Database infrastructure
-validation` workflow applies both migrations and passes all six pgTAP suites.
+GitHub Actions `Database infrastructure validation` passed. Its clean database
+reset applied all seven migrations, strict database lint passed, and all six
+pgTAP suites passed. Application formatting, ESLint, TypeScript, all 43
+unit/integration tests, production build, Playwright, and `git diff --check`
+also passed. The workstation still cannot run the disposable Supabase stack
+because Docker Desktop's Linux-engine pipe is absent; the successful CI
+workflow supplies the authoritative database runtime validation.
 
 Cloud migrations deployed: None.
 
@@ -67,12 +68,17 @@ Cloud migrations deployed: None.
   `//./pipe/dockerDesktopLinuxEngine` was not found.
 - Workstation-local database lint and pgTAP: blocked because local PostgreSQL
   was unavailable.
-- GitHub database validation with P06: pending; no commit or push was made.
+- GitHub database validation with P06: passed.
+- Clean database reset in CI: passed; all seven migrations applied.
+- Strict database lint in CI: passed.
+- pgTAP in CI: passed; all six suites passed.
+- Application formatting, ESLint, TypeScript, unit/integration tests,
+  production build, and Playwright in CI: passed.
 - Hosted development schema updated: No.
 
 ## Next action
 
-Review and commit P06, then let the existing `Database infrastructure
-validation` workflow run on a pull request or by an authorized manual dispatch.
-Mark P06 Complete only after clean reset, strict database lint, and all six
-pgTAP suites pass. P07 telemetry remains blocked until that result.
+P07 — Telemetry is now unblocked. Proceed with trusted session/event ingestion
+while preserving the P06 event/quarantine denial, ownership derivation, and
+least-privilege client boundary. Hosted deployment remains a separately
+reviewed action.

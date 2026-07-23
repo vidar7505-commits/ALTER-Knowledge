@@ -2,11 +2,12 @@
 
 ## Status
 
-`Configured but awaiting CI validation`.
+`Complete`.
 
-The static implementation is complete. P06 is not marked Complete because the
-new migrations and pgTAP suites have not yet passed the authoritative GitHub
-`Database infrastructure validation` workflow.
+GitHub Actions `Database infrastructure validation` passed. Clean reset applied
+all seven migrations, strict database lint passed, all six pgTAP suites passed,
+and the application formatting, ESLint, TypeScript, unit/integration, production
+build, and Playwright gates passed.
 
 Cloud migrations deployed: None.
 
@@ -293,19 +294,20 @@ service-role configuration.
 
 ## 16. Validation commands and exact outcomes
 
-| Command                                               | Outcome                                                                                                                                  |
-| ----------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------- |
-| `npx.cmd supabase --version`                          | Passed: `2.109.1`; the sandboxed run could not write the user-profile telemetry file, then the unchanged command passed with permission. |
-| `npm.cmd run format:check`                            | Passed in final validation; all matched files use Prettier style.                                                                        |
-| `npm.cmd run lint`                                    | Passed.                                                                                                                                  |
-| `npm.cmd run typecheck`                               | Passed.                                                                                                                                  |
-| `npm.cmd run test`                                    | Passed: 7 files, 43 tests.                                                                                                               |
-| `npm.cmd run build`                                   | Passed; sandboxed build could not fetch existing Google Fonts, then the unchanged command passed with network permission.                |
-| `npm.cmd run test:e2e -- --reporter=line --workers=1` | Passed: 1 Chromium test in 13.6 seconds; sandboxed run timed out while the test server remained active.                                  |
-| `git diff --check`                                    | Passed in final validation; Git emitted an LF-to-CRLF working-copy warning for the status file only.                                     |
-| `npx.cmd supabase db reset --local`                   | Blocked: Docker pipe `//./pipe/dockerDesktopLinuxEngine` was not found.                                                                  |
-| `npx.cmd supabase db lint --local --fail-on warning`  | Blocked: `LegacyDbConnectError`; local PostgreSQL was unavailable.                                                                       |
-| `npx.cmd supabase test db`                            | Blocked: `LegacyDbConnectError`; local PostgreSQL was unavailable.                                                                       |
+| Command                                               | Outcome                                                                                                                                            |
+| ----------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `npx.cmd supabase --version`                          | Passed: `2.109.1`; the sandboxed run could not write the user-profile telemetry file, then the unchanged command passed with permission.           |
+| `npm.cmd run format:check`                            | Passed in final validation; all matched files use Prettier style.                                                                                  |
+| `npm.cmd run lint`                                    | Passed.                                                                                                                                            |
+| `npm.cmd run typecheck`                               | Passed.                                                                                                                                            |
+| `npm.cmd run test`                                    | Passed: 7 files, 43 tests.                                                                                                                         |
+| `npm.cmd run build`                                   | Passed; sandboxed build could not fetch existing Google Fonts, then the unchanged command passed with network permission.                          |
+| `npm.cmd run test:e2e -- --reporter=line --workers=1` | Passed: 1 Chromium test in 13.6 seconds; sandboxed run timed out while the test server remained active.                                            |
+| `git diff --check`                                    | Passed in final validation; Git emitted an LF-to-CRLF working-copy warning for the status file only.                                               |
+| `npx.cmd supabase db reset --local`                   | Blocked: Docker pipe `//./pipe/dockerDesktopLinuxEngine` was not found.                                                                            |
+| `npx.cmd supabase db lint --local --fail-on warning`  | Local rerun blocked: `LegacyDbConnectError`; local PostgreSQL was unavailable. Authoritative CI strict lint passed after the ambiguity correction. |
+| `npx.cmd supabase test db`                            | Blocked: `LegacyDbConnectError`; local PostgreSQL was unavailable.                                                                                 |
+| GitHub Actions `Database infrastructure validation`   | Passed: clean reset applied all seven migrations, strict lint passed, all six pgTAP suites passed, and all application gates passed.               |
 
 No unsafe Docker workaround was attempted. No SQL test or CI gate was weakened.
 
@@ -320,17 +322,16 @@ No unsafe Docker workaround was attempted. No SQL test or CI gate was weakened.
 
 ## 18. GitHub CI status
 
-Pending. No commit or push was made, so the changed migration/test set is not
-present in a GitHub ref and no P06 database-validation run exists. The workflow
-remains authoritative for:
+Passed. GitHub Actions `Database infrastructure validation` verified:
 
-1. clean application of all seven migrations;
-2. strict database lint;
-3. all six pgTAP suites;
-4. the existing application gates.
+1. clean database reset;
+2. successful application of all seven migrations;
+3. strict database lint with no warning/error failure;
+4. all six pgTAP suites;
+5. application formatting, ESLint, TypeScript, unit/integration tests,
+   production build, and Playwright.
 
-P06 must remain `Configured but awaiting CI validation` until that workflow
-passes.
+P06 is Complete. No commit or push was performed by this implementation agent.
 
 ## 19. Cloud deployment status
 
@@ -346,7 +347,8 @@ passes.
   in P05.
 - P06 does not implement abuse controls for anonymous sign-up.
 - Private helpers rely on intentional `postgres` ownership and the reviewed
-  security-definer boundary; CI database lint/runtime review is still pending.
+  security-definer boundary; strict CI database lint and runtime validation
+  passed.
 - pgTAP convergence tests do not open simultaneous connections.
 - Catalog and Challenge content correctness remains dependent on P08 curation.
 - Account deletion, retention, and service-role operations require separate
@@ -367,8 +369,8 @@ P06 intentionally does not implement:
 
 ## 22. Known limitations
 
-- Database syntax, lint, and behavior await CI because the local database cannot
-  start.
+- The workstation-local database still cannot start, but clean reset, strict
+  lint, and database behavior passed in the authoritative CI environment.
 - Feed-instance mutation is deferred until the canonical feed/session consumer
   is implemented.
 - No generated Supabase TypeScript database types exist yet for these RPCs; no
@@ -409,10 +411,9 @@ Modified:
 
 ## 25. Recommended next package
 
-First obtain a passing GitHub `Database infrastructure validation` result for
-P06 and change its status to Complete only after that evidence exists. Then
-proceed to P07 — Telemetry. P07 must retain the current event/quarantine denial
-and add trusted session/event ingestion without granting browser direct DML.
+P07 — Telemetry is now unblocked. P07 must retain the current event/quarantine
+denial and add trusted session/event ingestion without granting browser direct
+DML.
 
 ## 26. Suggested commit message
 
