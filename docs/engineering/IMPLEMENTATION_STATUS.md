@@ -6,13 +6,13 @@
 
 ## Status
 
-`Configured but awaiting CI validation`.
+`Complete`.
 
 The first authoritative LR-001 PostgreSQL migration foundation and real pgTAP
-schema tests are implemented. Local runtime validation is blocked because Docker
-Desktop's Linux engine is unavailable on this workstation. The GitHub Actions
-`Database infrastructure validation` workflow remains the authoritative runtime
-gate and has not yet run with the P04 migrations and SQL tests.
+schema tests are implemented. The authoritative GitHub Actions
+`Database infrastructure validation` workflow passed: its clean database reset
+applied all four P04 migrations successfully, strict database lint passed, and
+all three pgTAP suites passed.
 
 Cloud migrations deployed: None.
 
@@ -44,14 +44,19 @@ Cloud migrations deployed: None.
 ## Validation status
 
 - Repository checks: lint, typecheck, unit tests, and production build passed.
-- Local clean reset: blocked by the missing Docker Desktop Linux-engine pipe.
-- Local database lint and pgTAP: blocked because local PostgreSQL is unavailable.
-- GitHub database validation with P04: pending.
+- GitHub database validation with P04: passed.
+- Clean database reset in CI: passed; all four P04 migrations applied
+  successfully.
+- Strict database lint in CI: passed.
+- pgTAP in CI: passed; all three suites passed.
+- Workstation-local database validation remains unavailable because Docker
+  Desktop's Linux engine is unavailable; CI supplied the authoritative runtime
+  validation.
 - Hosted development schema updated: No.
 
 ## Next action
 
-Run the unchanged `Database infrastructure validation` workflow with these P04
-migrations and SQL tests. Do not mark P04 complete or begin dependent identity and
-security packages until that workflow passes. Any hosted-development deployment
-requires a separate reviewed action after CI success.
+P05 — Anonymous Identity is now unblocked. RLS activation/policies, grants,
+cross-user isolation, mutation RPCs, and application-role immutability
+enforcement remain deferred to P06. Any hosted-development deployment requires a
+separate reviewed action.

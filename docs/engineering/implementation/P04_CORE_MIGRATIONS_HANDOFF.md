@@ -2,12 +2,14 @@
 
 ## Status
 
-`Configured but awaiting CI validation`.
+`Complete`.
 
-Static implementation is complete. The local workstation cannot run the
-disposable Supabase stack because Docker Desktop's Linux-engine pipe is absent.
-The GitHub Actions `Database infrastructure validation` workflow has not yet run
-with these migrations and SQL tests, so P04 is not complete.
+The GitHub Actions `Database infrastructure validation` workflow passed. Its
+clean database reset applied all four P04 migrations successfully, strict
+database lint passed, and all three pgTAP suites passed. The local workstation
+still cannot run the disposable Supabase stack because Docker Desktop's
+Linux-engine pipe is absent; the successful CI workflow supplied the
+authoritative runtime validation.
 
 Cloud migrations deployed: None.
 
@@ -246,18 +248,23 @@ credential, hosted reference, or static production identity was added.
 | `npx.cmd supabase db reset --local`                  | Blocked: Docker Desktop Linux-engine pipe `//./pipe/dockerDesktopLinuxEngine` was not found.                                                              |
 | `npx.cmd supabase db lint --local --fail-on warning` | Blocked: `LegacyDbConnectError`; local PostgreSQL was unavailable.                                                                                        |
 | `npx.cmd supabase test db`                           | Blocked: `LegacyDbConnectError`; local PostgreSQL was unavailable.                                                                                        |
+| GitHub Actions `Database infrastructure validation`  | Passed: clean reset applied all four P04 migrations; strict database lint and all three pgTAP suites passed.                                              |
 | `npm.cmd run format:check`                           | Passed after Prettier was applied only to this new handoff; the first check identified this file's Markdown formatting.                                   |
-| `git diff --check`                                   | Passed; Git emitted an LF-to-CRLF working-copy warning for `IMPLEMENTATION_STATUS.md` only.                                                               |
+| `git diff --check`                                   | Passed; Git emitted LF-to-CRLF working-copy warnings for the two updated engineering documents.                                                           |
 
 No unsafe workaround was attempted. Tests were not weakened, and the database CI
 gate was not changed.
 
 ## Runtime and deployment status
 
-- Local migration application: not runtime-validated because Docker is absent.
-- Local database lint: not runtime-validated.
-- Local pgTAP: not runtime-validated.
-- GitHub Actions validation with P04: pending.
+- GitHub Actions validation with P04: passed.
+- Clean database reset in CI: passed.
+- P04 migration application in CI: passed; all four migrations applied
+  successfully.
+- Strict database lint in CI: passed.
+- pgTAP in CI: passed; all three suites passed.
+- Workstation-local reset, lint, and pgTAP remain unavailable because Docker is
+  absent; CI supplied the authoritative runtime validation.
 - Hosted development schema updated: No.
 - Cloud migrations deployed: None.
 - Remote reset: not run.
@@ -279,8 +286,6 @@ gate was not changed.
 
 ## Known limitations and deferred work
 
-- Runtime SQL syntax, migration application, lint, and pgTAP remain pending until
-  the Docker-capable GitHub workflow passes.
 - Auth-user bootstrap/profile/Wardrobe creation and recovery belong to P05.
 - RLS, two-user isolation, grants, application-role immutability, and mutation
   RPCs belong to P06.
@@ -294,11 +299,10 @@ gate was not changed.
 
 ## Recommended next package
 
-First run the unchanged GitHub `Database infrastructure validation` workflow.
-Only after its clean reset, strict lint, and all three pgTAP suites pass should P04
-be marked complete. Then proceed in dependency order to P05 Anonymous Identity
-and P06 RLS/RPC Foundation; do not deploy these migrations to hosted development
-without a separately reviewed action.
+P05 — Anonymous Identity is now unblocked. Proceed to P05 in dependency order.
+P06 RLS/RPC Foundation remains deferred, including RLS, grants, cross-user
+isolation, application-role immutability, and mutation RPCs. Do not deploy these
+migrations to hosted development without a separately reviewed action.
 
 ## Exact changed-file list
 
