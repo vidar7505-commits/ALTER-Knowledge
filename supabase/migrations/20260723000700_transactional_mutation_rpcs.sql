@@ -434,9 +434,9 @@ end;
 $$;
 
 create function public.save_product(
-  product_id uuid,
-  operation_id uuid,
-  source_surface text
+  p_product_id uuid,
+  p_operation_id uuid,
+  p_source_surface text
 )
 returns jsonb
 language plpgsql
@@ -451,7 +451,7 @@ declare
   replay_result jsonb;
   response jsonb;
 begin
-  if source_surface not in (
+  if p_source_surface not in (
     'discover',
     'product_detail',
     'wardrobe',
@@ -464,13 +464,13 @@ begin
 
   fingerprint := jsonb_build_object(
     'product_id',
-    product_id,
+    p_product_id,
     'source_surface',
-    source_surface
+    p_source_surface
   );
 
   replay_result := private.claim_mutation_operation(
-    operation_id,
+    p_operation_id,
     owner_id,
     'save_product',
     fingerprint
@@ -483,7 +483,7 @@ begin
   if not exists (
     select 1
     from public.products
-    where products.id = product_id
+    where products.id = p_product_id
       and products.is_active
   ) then
     raise exception 'active product not found'
@@ -505,7 +505,7 @@ begin
   into saved_row
   from public.saved_products
   where saved_products.anonymous_user_id = owner_id
-    and saved_products.product_id = save_product.product_id
+    and saved_products.product_id = p_product_id
     and saved_products.removed_at is null
   for update;
 
@@ -520,9 +520,9 @@ begin
     values (
       canonical_wardrobe_id,
       owner_id,
-      product_id,
-      source_surface,
-      operation_id
+      p_product_id,
+      p_source_surface,
+      p_operation_id
     )
     on conflict (anonymous_user_id, product_id)
       where removed_at is null
@@ -534,14 +534,14 @@ begin
       into strict saved_row
       from public.saved_products
       where saved_products.anonymous_user_id = owner_id
-        and saved_products.product_id = save_product.product_id
+        and saved_products.product_id = p_product_id
         and saved_products.removed_at is null;
     end if;
   end if;
 
   response := jsonb_build_object(
     'ok', true,
-    'operation_id', operation_id,
+    'operation_id', p_operation_id,
     'data', jsonb_build_object(
       'saved_product_id', saved_row.id,
       'product_id', saved_row.product_id,
@@ -551,7 +551,7 @@ begin
 
   update private.mutation_operations
   set result = response, completed_at = now()
-  where mutation_operations.operation_id = save_product.operation_id;
+  where mutation_operations.operation_id = p_operation_id;
 
   return response;
 end;
@@ -663,8 +663,8 @@ end;
 $$;
 
 create function public.start_challenge(
-  challenge_id uuid,
-  operation_id uuid
+  p_challenge_id uuid,
+  p_operation_id uuid
 )
 returns jsonb
 language plpgsql
@@ -678,10 +678,10 @@ declare
   replay_result jsonb;
   response jsonb;
 begin
-  fingerprint := jsonb_build_object('challenge_id', challenge_id);
+  fingerprint := jsonb_build_object('challenge_id', p_challenge_id);
 
   replay_result := private.claim_mutation_operation(
-    operation_id,
+    p_operation_id,
     owner_id,
     'start_challenge',
     fingerprint
@@ -694,7 +694,7 @@ begin
   if not exists (
     select 1
     from public.challenges
-    where challenges.id = challenge_id
+    where challenges.id = p_challenge_id
       and challenges.is_active
       and challenges.active_from <= now()
       and (
@@ -717,9 +717,9 @@ begin
   )
   values (
     owner_id,
-    challenge_id,
+    p_challenge_id,
     'in_progress',
-    operation_id,
+    p_operation_id,
     now(),
     now(),
     1
@@ -732,12 +732,12 @@ begin
     into strict progress_row
     from public.challenge_progress
     where challenge_progress.anonymous_user_id = owner_id
-      and challenge_progress.challenge_id = start_challenge.challenge_id;
+      and challenge_progress.challenge_id = p_challenge_id;
   end if;
 
   response := jsonb_build_object(
     'ok', true,
-    'operation_id', operation_id,
+    'operation_id', p_operation_id,
     'state_revision', progress_row.state_revision,
     'data', jsonb_build_object(
       'challenge_progress_id', progress_row.id,
@@ -747,7 +747,7 @@ begin
 
   update private.mutation_operations
   set result = response, completed_at = now()
-  where mutation_operations.operation_id = start_challenge.operation_id;
+  where mutation_operations.operation_id = p_operation_id;
 
   return response;
 end;
