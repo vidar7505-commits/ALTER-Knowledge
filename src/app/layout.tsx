@@ -2,6 +2,8 @@ import type { Metadata } from 'next';
 import type { ReactNode } from 'react';
 import { Instrument_Serif, Inter } from 'next/font/google';
 
+import { IdentityProvider } from '@/features/identity/identity-provider';
+
 import './globals.css';
 
 const displayFont = Instrument_Serif({
@@ -28,7 +30,9 @@ export default function RootLayout({
 }: Readonly<{ children: ReactNode }>) {
   return (
     <html lang="en" className={`${displayFont.variable} ${uiFont.variable}`}>
-      <body>{children}</body>
+      <body>
+        <IdentityProvider>{children}</IdentityProvider>
+      </body>
     </html>
   );
 }

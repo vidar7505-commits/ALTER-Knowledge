@@ -2,38 +2,39 @@
 
 ## Current package
 
-`P04 — Core Database Migrations`
+`P05 — Anonymous Identity`
 
 ## Status
 
-`Complete`.
+`Configured but awaiting CI validation`.
 
-The first authoritative LR-001 PostgreSQL migration foundation and real pgTAP
-schema tests are implemented. The authoritative GitHub Actions
-`Database infrastructure validation` workflow passed: its clean database reset
-applied all four P04 migrations successfully, strict database lint passed, and
-all three pgTAP suites passed.
+The LR-001 anonymous identity foundation is implemented. The browser reuses or
+recovers a Supabase Auth session, creates an anonymous session when required,
+provisions the canonical analytical identity and Wardrobe through one narrowly
+scoped `auth.uid()`-derived RPC, and exposes explicit ready and error states.
+Application checks pass. The new migration and pgTAP suite still require the
+authoritative GitHub Actions `Database infrastructure validation` workflow.
 
 Cloud migrations deployed: None.
 
 ## Implemented scope
 
-- `pgcrypto`, the `analytics` schema, and canonical onboarding, Challenge, and
-  environment enums.
-- Identity/profile, onboarding, session, catalog, Wardrobe/save, Challenge,
-  feed-instance, event, and quarantine persistence.
-- Explicit primary keys, foreign keys, ownership-consistency keys, unique and
-  partial-unique constraints, lifecycle checks, timestamps, and canonical query
-  indexes.
-- Shared updated-at behavior, immutable anonymous Auth mapping, and guarded
-  onboarding/Challenge lifecycle transitions.
-- pgTAP coverage for schema objects, columns/types, keys, constraints, valid
-  inserts, invalid state rejection, ownership consistency, index presence, and
-  seed independence.
+- Browser-safe Supabase client using only the public URL and anon key.
+- Existing-session reuse, anonymous sign-in, invalid-session refresh and
+  local-only replacement recovery.
+- Shared in-flight bootstrap protection for concurrent calls and React Strict
+  Mode.
+- Typed identity provider and hook with `idle`, `loading`, `ready`,
+  `recoverable_error`, and `unrecoverable_error` states.
+- Minimal `ensure_anonymous_identity()` security-definer RPC deriving ownership
+  from `auth.uid()` and returning only the canonical anonymous identity and
+  Wardrobe IDs.
+- Deterministic application tests and pgTAP coverage for session flows,
+  concurrency, error states, idempotent provisioning, execution grants, and
+  duplicate-row prevention.
 
 ## Explicitly deferred
 
-- Anonymous Auth bootstrap and recovery behavior (`P05`).
 - RLS activation/policies, grants, cross-user isolation, mutation RPCs, and
   application-role immutability enforcement (`P06`).
 - Controlled telemetry ingestion, event-contract validation, quarantine routing,
@@ -43,20 +44,20 @@ Cloud migrations deployed: None.
 
 ## Validation status
 
-- Repository checks: lint, typecheck, unit tests, and production build passed.
-- GitHub database validation with P04: passed.
-- Clean database reset in CI: passed; all four P04 migrations applied
-  successfully.
-- Strict database lint in CI: passed.
-- pgTAP in CI: passed; all three suites passed.
-- Workstation-local database validation remains unavailable because Docker
-  Desktop's Linux engine is unavailable; CI supplied the authoritative runtime
-  validation.
+- Application lint, typecheck, unit/integration tests, production build, and
+  Playwright smoke test passed.
+- Unit/integration tests: 7 files and 43 tests passed.
+- Workstation-local database reset is blocked because the Docker Desktop Linux
+  engine pipe is absent.
+- Workstation-local database lint and pgTAP are blocked because local PostgreSQL
+  is unavailable.
+- GitHub database validation with the P05 migration and SQL test: pending.
 - Hosted development schema updated: No.
 
 ## Next action
 
-P05 — Anonymous Identity is now unblocked. RLS activation/policies, grants,
-cross-user isolation, mutation RPCs, and application-role immutability
-enforcement remain deferred to P06. Any hosted-development deployment requires a
-separate reviewed action.
+Run the unchanged `Database infrastructure validation` workflow with the P05
+migration and SQL test. Mark P05 complete only after clean reset, strict database
+lint, and all pgTAP suites pass. P06 RLS/RPC Foundation remains blocked on that
+result, and any hosted-development deployment requires a separate reviewed
+action.
