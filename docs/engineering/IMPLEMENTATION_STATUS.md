@@ -2,40 +2,56 @@
 
 ## Current package
 
-`P03A — Supabase Cloud Development and CI Validation`
+`P04 — Core Database Migrations`
 
 ## Status
 
-Complete. Development-only cloud linkage succeeded, including the guarded linked
-status check. The GitHub Actions `Database infrastructure validation` workflow
-also completed successfully against disposable local containers. No domain
-migrations were deployed, and no remote reset or seed push occurred.
+`Configured but awaiting CI validation`.
+
+The first authoritative LR-001 PostgreSQL migration foundation and real pgTAP
+schema tests are implemented. Local runtime validation is blocked because Docker
+Desktop's Linux engine is unavailable on this workstation. The GitHub Actions
+`Database infrastructure validation` workflow remains the authoritative runtime
+gate and has not yet run with the P04 migrations and SQL tests.
+
+Cloud migrations deployed: None.
 
 ## Implemented scope
 
-- Frozen workstation, hosted-development, and GitHub Actions environment model.
-- Secure operator-run `login` and `link --project-ref` workflow without a committed
-  project reference or automatic linking.
-- Runtime guard restricted to `development`, with linked-target verification,
-  explicit push confirmation, secret-safe messages, and no linked-reset path.
-- Guarded linked migration status, official push dry run, and explicit
-  development push commands; none include seed data.
-- Dedicated GitHub Actions database workflow using the pinned Supabase CLI and
-  disposable local containers for start, reset, strict lint, future pgTAP tests,
-  application validation, and cleanup.
-- Seven focused remote-guard tests.
-- Hosted-development data, migration-authority, secret-boundary, and CI-resource
-  policies.
+- `pgcrypto`, the `analytics` schema, and canonical onboarding, Challenge, and
+  environment enums.
+- Identity/profile, onboarding, session, catalog, Wardrobe/save, Challenge,
+  feed-instance, event, and quarantine persistence.
+- Explicit primary keys, foreign keys, ownership-consistency keys, unique and
+  partial-unique constraints, lifecycle checks, timestamps, and canonical query
+  indexes.
+- Shared updated-at behavior, immutable anonymous Auth mapping, and guarded
+  onboarding/Challenge lifecycle transitions.
+- pgTAP coverage for schema objects, columns/types, keys, constraints, valid
+  inserts, invalid state rejection, ownership consistency, index presence, and
+  seed independence.
 
 ## Explicitly deferred
 
-- Domain schema, migrations, indexes, triggers, RLS, RPCs, and pgTAP tests.
-- Supabase clients, authentication behavior, telemetry, catalog, and product code.
-- Automated hosted migration deployment and every staging/production environment.
-- Any remote schema write operation and every cloud credential value.
+- Anonymous Auth bootstrap and recovery behavior (`P05`).
+- RLS activation/policies, grants, cross-user isolation, mutation RPCs, and
+  application-role immutability enforcement (`P06`).
+- Controlled telemetry ingestion, event-contract validation, quarantine routing,
+  and reconciliation (`P07`/`P17`).
+- Curated onboarding, Challenge, and product seed/import content (`P08`).
+- Certified analytics views and hosted-development migration deployment.
+
+## Validation status
+
+- Repository checks: lint, typecheck, unit tests, and production build passed.
+- Local clean reset: blocked by the missing Docker Desktop Linux-engine pipe.
+- Local database lint and pgTAP: blocked because local PostgreSQL is unavailable.
+- GitHub database validation with P04: pending.
+- Hosted development schema updated: No.
 
 ## Next action
 
-`P04 — Core Migrations` is unblocked. Proceed with P04 migration authoring and
-validate those migrations in the disposable local-container GitHub workflow
-before any separately reviewed, controlled deployment to hosted development.
+Run the unchanged `Database infrastructure validation` workflow with these P04
+migrations and SQL tests. Do not mark P04 complete or begin dependent identity and
+security packages until that workflow passes. Any hosted-development deployment
+requires a separate reviewed action after CI success.
