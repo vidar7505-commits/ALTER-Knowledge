@@ -238,6 +238,7 @@ select lives_ok(
       wardrobe_id,
       anonymous_user_id,
       product_id,
+      saved_at,
       source_surface,
       save_operation_id
     )
@@ -246,6 +247,7 @@ select lives_ok(
       '40000000-0000-4000-8000-000000000001',
       '10000000-0000-4000-8000-000000000001',
       '30000000-0000-4000-8000-000000000001',
+      '2026-07-23 09:00:00+00',
       'discover',
       '42000000-0000-4000-8000-000000000001'
     )
