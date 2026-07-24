@@ -6,7 +6,7 @@
 
 ## Status
 
-Configured but awaiting CI validation.
+Complete
 
 The approved LR-001 three-step onboarding experience is implemented locally:
 identity-aware entry resolution, canonical preference taxonomy loading,
@@ -17,6 +17,10 @@ deterministic Playwright fixtures.
 
 Database changes: None.
 Cloud migrations deployed: None.
+Hosted development schema updated: No.
+Remote reset: not run.
+Remote push: not run.
+Remote seed push: not run.
 
 ## Validation status
 
@@ -28,11 +32,14 @@ Cloud migrations deployed: None.
   and network access for the existing Google Fonts.
 - `npm.cmd run test:e2e -- --reporter=line --workers=1`: passed, 10 Chromium
   tests with one worker (production server), including the P10 visual suite.
+- GitHub application validation: passed.
 - Axe/component checks: included in the unit test command and passed.
 - `git diff --check`: passed (line-ending normalization warnings only).
 - Visual validation: passed locally at 320×700, 390×844, 768×1024, 1200×900,
   and 1440×1024 across the documented onboarding and transition states.
-- GitHub application CI: Configured but awaiting CI validation.
+- Mobile sticky-control overlap defect: resolved before closure; controls remain
+  in normal document flow without covering preference cards.
+- GitHub application CI: passed.
 - Cloud deployment: None; no remote commands were run.
 
 ## Implemented P10 scope
@@ -66,5 +73,6 @@ tokens. Raw database errors are mapped to user-safe typed messages.
 
 ## Next action
 
-Complete CI validation, then proceed to **P11 — Discover**:
-deterministic feed, cursor pagination, restoration, and qualified impressions.
+P10 is closed. **P11 — Discover** is unblocked by the implementation plan and
+is scoped to deterministic feed behavior, cursor pagination, restoration, and
+qualified impressions.

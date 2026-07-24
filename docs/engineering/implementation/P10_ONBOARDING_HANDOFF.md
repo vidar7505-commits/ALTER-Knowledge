@@ -44,11 +44,11 @@ Identity, state, and taxonomy loading have announced status surfaces. Recoverabl
 
 ## 10. Tests and validation
 
-Unit/service coverage validates taxonomy ordering, malformed data, selection normalization, ownership-field exclusion, terminal distinction, and contract error mapping. Playwright coverage adds new-user keyboard/back/completion and skip/reload flows, updates shell fixtures for terminal gating, and certifies the onboarding visual states. `format:check`, `lint`, `typecheck`, and `test` passed (18 files, 97 tests). `build` passed with the deterministic local Supabase environment and network access for the existing fonts. The full E2E suite passed: 10 Chromium tests with one worker. `git diff --check` passed with line-ending normalization warnings only.
+Unit/service coverage validates taxonomy ordering, malformed data, selection normalization, ownership-field exclusion, terminal distinction, and contract error mapping. Playwright coverage adds new-user keyboard/back/completion and skip/reload flows, updates shell fixtures for terminal gating, and certifies the onboarding visual states. `format:check`, `lint`, `typecheck`, and `test` passed (18 files, 97 tests). `build` passed with the deterministic local Supabase environment and network access for the existing fonts. The full E2E suite passed: 10 Chromium tests with one worker. GitHub application validation passed. `git diff --check` passed with line-ending normalization warnings only.
 
 ## 11. Database, CI, cloud, security, and scope review
 
-Database changes: **None**. Cloud migrations deployed: **None**. No validated migration was edited, no remote command or deployment was run, and no service-role credential is used. Caller ownership IDs and Supabase sessions remain outside UI props. The implementation does not claim Discover, Product Detail, Wardrobe, Challenge, continuation, offline queueing, dashboards, or production deployment.
+Database changes: **None**. Cloud migrations deployed: **None**. Hosted development schema updated: **No**. Remote reset: **not run**. Remote push: **not run**. Remote seed push: **not run**. No validated migration was edited, no remote command or deployment was run, and no service-role credential is used. Caller ownership IDs and Supabase sessions remain outside UI props. The implementation does not claim Discover, Product Detail, Wardrobe, Challenge, continuation, offline queueing, dashboards, or production deployment.
 
 ## 12. Final visual certification record
 
@@ -70,6 +70,6 @@ Created: `src/app/onboarding/**`, `src/features/onboarding/**`, `public/onboardi
 
 Modified: `src/app/page.tsx`, `src/app/page.test.tsx`, `src/app/(product)/layout.tsx`, `tests/e2e/identity-mock.ts`, `tests/e2e/shell.spec.ts`, `tests/e2e/onboarding-visual.spec.ts`, and `docs/engineering/IMPLEMENTATION_STATUS.md`.
 
-Local browser visual certification is complete; GitHub CI confirmation remains pending. Recommended next package: **P11 — Discover**, deterministic feed and impressions, dependent on P07, P08, P09, and P10.
+Local browser visual certification is complete. The mobile sticky-control overlap defect was resolved before closure. GitHub application validation is complete, so P10 is closed. The implementation plan confirms **P11 — Discover** as the next unblocked package, scoped to deterministic feed behavior, cursor pagination, restoration, and qualified impressions. Product Detail, Wardrobe, Challenge, and return continuation remain deferred.
 
 Suggested commit message: `feat(onboarding): implement LR-001 three-step onboarding flow`
