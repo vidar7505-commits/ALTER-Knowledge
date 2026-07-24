@@ -10,7 +10,8 @@ import type {
   IdentitySession,
 } from '@/features/identity/types';
 
-let browserClient: IdentityBootstrapClient | undefined;
+let browserSupabaseClient: SupabaseClient | undefined;
+let browserIdentityClient: IdentityBootstrapClient | undefined;
 
 function toIdentitySession(
   session: {
@@ -87,7 +88,13 @@ function adaptSupabaseClient(
 export function createBrowserIdentityClient(
   environment: BrowserEnvironment,
 ): IdentityBootstrapClient {
-  const supabase = createClient(
+  return adaptSupabaseClient(createBrowserSupabaseClient(environment));
+}
+
+export function createBrowserSupabaseClient(
+  environment: BrowserEnvironment,
+): SupabaseClient {
+  return createClient(
     environment.NEXT_PUBLIC_SUPABASE_URL,
     environment.NEXT_PUBLIC_SUPABASE_ANON_KEY,
     {
@@ -98,12 +105,18 @@ export function createBrowserIdentityClient(
       },
     },
   );
+}
 
-  return adaptSupabaseClient(supabase);
+export function getBrowserSupabaseClient(): SupabaseClient {
+  browserSupabaseClient ??= createBrowserSupabaseClient(
+    readBrowserEnvironment(),
+  );
+
+  return browserSupabaseClient;
 }
 
 export function getBrowserIdentityClient(): IdentityBootstrapClient {
-  browserClient ??= createBrowserIdentityClient(readBrowserEnvironment());
+  browserIdentityClient ??= adaptSupabaseClient(getBrowserSupabaseClient());
 
-  return browserClient;
+  return browserIdentityClient;
 }
