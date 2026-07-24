@@ -440,6 +440,27 @@ select ok(
     'authenticated',
     'private.import_lr001_catalog()',
     'EXECUTE'
+  )
+  and not has_function_privilege(
+    'anon',
+    'private.import_lr001_catalog()',
+    'EXECUTE'
+  )
+  and not exists (
+    select 1
+    from pg_catalog.pg_proc
+    where pg_proc.oid = 'private.import_lr001_catalog()'::regprocedure
+      and exists (
+        select 1
+        from pg_catalog.aclexplode(
+          coalesce(
+            pg_proc.proacl,
+            pg_catalog.acldefault('f', pg_proc.proowner)
+          )
+        ) as function_acl
+        where function_acl.grantee = 0
+          and function_acl.privilege_type = 'EXECUTE'
+      )
   ),
   'the repository import is not browser-callable'
 );
@@ -448,49 +469,83 @@ select ok(
   (
     select pg_proc.provolatile = 'v'
       and not pg_proc.prosecdef
-      and pg_proc.proconfig = array['search_path=']
+      and 'search_path=""' = any(pg_proc.proconfig)
+      and pg_get_userbyid(pg_proc.proowner) = 'postgres'
+      and pg_language.lanname = 'plpgsql'
       and pg_get_functiondef(pg_proc.oid) !~* '\mexecute\M'
     from pg_catalog.pg_proc
     join pg_catalog.pg_namespace
       on pg_namespace.oid = pg_proc.pronamespace
+    join pg_catalog.pg_language
+      on pg_language.oid = pg_proc.prolang
     where pg_namespace.nspname = 'private'
       and pg_proc.proname = 'import_lr001_catalog'
   ),
-  'the catalog import is VOLATILE, invoker-rights, fixed-path, and contains no dynamic SQL'
-);
-
-select ok(
-  not has_function_privilege(
-    'anon',
-    'public.list_catalog_products(text,text,text,uuid,integer)',
-    'EXECUTE'
-  )
-  and has_function_privilege(
-    'authenticated',
-    'public.list_catalog_products(text,text,text,uuid,integer)',
-    'EXECUTE'
-  ),
-  'catalog reads are granted to authenticated users and denied to anon'
+  'the postgres-owned PL/pgSQL catalog import is VOLATILE, invoker-rights, fixed-path, and contains no dynamic SQL'
 );
 
 select is(
   (
+    with expected(signature) as (
+      values
+        ('public.list_catalog_products(text,text,text,uuid,integer)'),
+        ('public.get_catalog_product(uuid)'),
+        ('public.list_products_for_challenge_slot(uuid,text,uuid,integer)')
+    )
     select count(*)
-    from pg_catalog.pg_proc
-    join pg_catalog.pg_namespace
-      on pg_namespace.oid = pg_proc.pronamespace
-    where pg_namespace.nspname = 'public'
-      and pg_proc.proname in (
-        'list_catalog_products',
-        'get_catalog_product',
-        'list_products_for_challenge_slot'
+    from expected
+    join pg_catalog.pg_proc
+      on pg_proc.oid = to_regprocedure(expected.signature)
+    where has_function_privilege(
+        'authenticated',
+        pg_proc.oid,
+        'EXECUTE'
       )
-      and not pg_proc.prosecdef
-      and pg_proc.provolatile = 's'
-      and pg_proc.proconfig = array['search_path=']
+      and not has_function_privilege('anon', pg_proc.oid, 'EXECUTE')
+      and not exists (
+        select 1
+        from pg_catalog.aclexplode(
+          coalesce(
+            pg_proc.proacl,
+            pg_catalog.acldefault('f', pg_proc.proowner)
+          )
+        ) as function_acl
+        where function_acl.grantee = 0
+          and function_acl.privilege_type = 'EXECUTE'
+      )
   ),
   3::bigint,
-  'all catalog read functions are STABLE security-invoker boundaries with empty search paths'
+  'all catalog reads are granted to authenticated users and denied to anon and PUBLIC'
+);
+
+select is(
+  (
+    with expected(signature, language_name) as (
+      values
+        (
+          'public.list_catalog_products(text,text,text,uuid,integer)',
+          'plpgsql'
+        ),
+        ('public.get_catalog_product(uuid)', 'sql'),
+        (
+          'public.list_products_for_challenge_slot(uuid,text,uuid,integer)',
+          'plpgsql'
+        )
+    )
+    select count(*)
+    from expected
+    join pg_catalog.pg_proc
+      on pg_proc.oid = to_regprocedure(expected.signature)
+    join pg_catalog.pg_language
+      on pg_language.oid = pg_proc.prolang
+    where not pg_proc.prosecdef
+      and pg_proc.provolatile = 's'
+      and 'search_path=""' = any(pg_proc.proconfig)
+      and pg_get_userbyid(pg_proc.proowner) = 'postgres'
+      and pg_language.lanname = expected.language_name
+  ),
+  3::bigint,
+  'all catalog read functions have their exact languages and are postgres-owned STABLE security-invoker boundaries with empty search paths'
 );
 
 set local role authenticated;

@@ -53,48 +53,92 @@ select is(
 
 select is(
   (
+    with expected(signature) as (
+      values
+        ('public.ensure_anonymous_identity()'),
+        ('public.complete_onboarding(uuid,text,text,text[])'),
+        ('public.skip_onboarding(uuid,text)'),
+        ('public.save_product(uuid,uuid,text)'),
+        ('public.remove_product(uuid,uuid)'),
+        ('public.start_challenge(uuid,uuid)'),
+        ('public.select_challenge_item(uuid,text,uuid,uuid)'),
+        ('public.remove_challenge_item(uuid,uuid)'),
+        ('public.complete_challenge(uuid,uuid)'),
+        ('public.list_catalog_products(text,text,text,uuid,integer)'),
+        ('public.get_catalog_product(uuid)'),
+        ('public.list_products_for_challenge_slot(uuid,text,uuid,integer)')
+    )
     select count(*)
-    from pg_catalog.pg_proc
-    join pg_catalog.pg_namespace
-      on pg_namespace.oid = pg_proc.pronamespace
-    where pg_namespace.nspname = 'public'
-      and pg_proc.proname in (
-        'ensure_anonymous_identity',
-        'complete_onboarding',
-        'skip_onboarding',
-        'save_product',
-        'remove_product',
-        'start_challenge',
-        'select_challenge_item',
-        'remove_challenge_item',
-        'complete_challenge'
-      )
-      and has_function_privilege(
+    from expected
+    join pg_catalog.pg_proc
+      on pg_proc.oid = to_regprocedure(expected.signature)
+    where has_function_privilege(
         'authenticated',
         pg_proc.oid,
         'EXECUTE'
       )
       and not has_function_privilege('anon', pg_proc.oid, 'EXECUTE')
-  ),
-  9::bigint,
-  'only authenticated clients can execute the nine intended client RPCs'
-);
-
-select is(
-  (
-    select count(*)
-    from pg_catalog.pg_proc
-    join pg_catalog.pg_namespace
-      on pg_namespace.oid = pg_proc.pronamespace
-    where pg_namespace.nspname = 'public'
-      and has_function_privilege(
-        'authenticated',
-        pg_proc.oid,
-        'EXECUTE'
+      and not exists (
+        select 1
+        from pg_catalog.aclexplode(
+          coalesce(
+            pg_proc.proacl,
+            pg_catalog.acldefault('f', pg_proc.proowner)
+          )
+        ) as function_acl
+        where function_acl.grantee = 0
+          and function_acl.privilege_type = 'EXECUTE'
       )
   ),
-  9::bigint,
-  'authenticated has no public-schema function execution beyond intended RPCs'
+  12::bigint,
+  'only authenticated clients can execute the twelve intended client RPCs'
+);
+
+select ok(
+  (
+    with expected(signature) as (
+      values
+        ('public.ensure_anonymous_identity()'),
+        ('public.complete_onboarding(uuid,text,text,text[])'),
+        ('public.skip_onboarding(uuid,text)'),
+        ('public.save_product(uuid,uuid,text)'),
+        ('public.remove_product(uuid,uuid)'),
+        ('public.start_challenge(uuid,uuid)'),
+        ('public.select_challenge_item(uuid,text,uuid,uuid)'),
+        ('public.remove_challenge_item(uuid,uuid)'),
+        ('public.complete_challenge(uuid,uuid)'),
+        ('public.list_catalog_products(text,text,text,uuid,integer)'),
+        ('public.get_catalog_product(uuid)'),
+        ('public.list_products_for_challenge_slot(uuid,text,uuid,integer)')
+    ),
+    expected_oids(oid) as (
+      select to_regprocedure(expected.signature)::oid
+      from expected
+    ),
+    actual_oids(oid) as (
+      select pg_proc.oid
+      from pg_catalog.pg_proc
+      join pg_catalog.pg_namespace
+        on pg_namespace.oid = pg_proc.pronamespace
+      where pg_namespace.nspname = 'public'
+        and has_function_privilege(
+          'authenticated',
+          pg_proc.oid,
+          'EXECUTE'
+        )
+    )
+    select not exists (
+        (select actual_oids.oid from actual_oids)
+        except
+        (select expected_oids.oid from expected_oids)
+      )
+      and not exists (
+        (select expected_oids.oid from expected_oids)
+        except
+        (select actual_oids.oid from actual_oids)
+      )
+  ),
+  'authenticated public-schema function execution matches the exact RPC allow-list'
 );
 
 select ok(
@@ -275,6 +319,13 @@ values
     true
   );
 
+update public.challenges
+set is_active = false
+where challenges.id = 'c0810000-0000-4000-8000-000000000001'
+  and challenges.challenge_key = 'after-dark'
+  and challenges.version = 'challenge-evening-v1'
+  and challenges.is_active;
+
 insert into public.challenges (
   id,
   challenge_key,
@@ -299,7 +350,7 @@ values (
     {"slot_id":"layer_or_accessory"}
   ]'::jsonb,
   '{"unique_products":true}'::jsonb,
-  now() - interval '1 hour',
+  '2026-07-23 00:00:00+00',
   true
 );
 

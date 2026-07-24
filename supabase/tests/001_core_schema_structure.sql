@@ -366,16 +366,25 @@ select is(
   'anonymous users do not depend on seed data'
 );
 
-select is(
-  (select count(*) from public.products),
-  0::bigint,
-  'products do not depend on seed data'
+select ok(
+  exists (
+    select 1
+    from public.products
+    where products.external_source = 'alter_repository'
+      and products.catalog_version = 'lr001-catalog-v1'
+  ),
+  'repository-managed products are installed by migrations without seed data'
 );
 
-select is(
-  (select count(*) from public.challenges),
-  0::bigint,
-  'challenges do not depend on seed data'
+select ok(
+  exists (
+    select 1
+    from public.challenges
+    where challenges.id = 'c0810000-0000-4000-8000-000000000001'
+      and challenges.challenge_key = 'after-dark'
+      and challenges.version = 'challenge-evening-v1'
+  ),
+  'the canonical Challenge is installed by migrations without seed data'
 );
 
 select is(

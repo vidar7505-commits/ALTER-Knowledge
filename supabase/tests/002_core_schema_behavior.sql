@@ -345,14 +345,14 @@ select lives_ok(
     )
     values (
       '50000000-0000-4000-8000-000000000001',
-      'after-dark',
-      'challenge-evening-v1',
-      'After Dark',
-      'Build a look for an evening out.',
+      'core-schema-fixture',
+      'core-schema-fixture-v1',
+      'Core Schema Fixture',
+      'Validate core Challenge relations.',
       '[{"slot_id":"top"},{"slot_id":"bottom"}]'::jsonb,
       '{"unique_products":true}'::jsonb,
       '2026-07-23 00:00:00+00',
-      true
+      false
     )
   $$,
   'a valid challenge definition can be inserted'
@@ -515,7 +515,7 @@ select lives_ok(
       '60000000-0000-4000-8000-000000000001',
       '64000000-0000-4000-8000-000000000001',
       '{"top":{"product_id":"30000000-0000-4000-8000-000000000001"},"bottom":{"product_id":"30000000-0000-4000-8000-000000000002"}}'::jsonb,
-      '{"version":"challenge-evening-v1"}'::jsonb,
+      '{"version":"core-schema-fixture-v1"}'::jsonb,
       '2026-07-23 09:21:00+00'
     )
   $$,

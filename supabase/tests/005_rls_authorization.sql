@@ -304,6 +304,13 @@ values
     '71510000-0000-4000-8000-000000000002'
   );
 
+update public.challenges
+set is_active = false
+where challenges.id = 'c0810000-0000-4000-8000-000000000001'
+  and challenges.challenge_key = 'after-dark'
+  and challenges.version = 'challenge-evening-v1'
+  and challenges.is_active;
+
 insert into public.challenges (
   id,
   challenge_key,
@@ -324,7 +331,7 @@ values
     'Build a test look.',
     '[{"slot_id":"top"}]'::jsonb,
     '{"unique_products":true}'::jsonb,
-    now() - interval '1 hour',
+    '2026-07-23 00:00:00+00',
     true
   ),
   (
@@ -335,7 +342,7 @@ values
     'Do not expose this definition.',
     '[{"slot_id":"top"}]'::jsonb,
     '{"unique_products":true}'::jsonb,
-    now() - interval '1 hour',
+    '2026-07-23 00:00:00+00',
     false
   );
 
