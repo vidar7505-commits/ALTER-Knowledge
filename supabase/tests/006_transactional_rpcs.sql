@@ -22,13 +22,17 @@ select is(
         'start_challenge',
         'select_challenge_item',
         'remove_challenge_item',
-        'complete_challenge'
+        'complete_challenge',
+        'ensure_session',
+        'ensure_feed_instance',
+        'append_feed_batch',
+        'record_qualified_feed_position'
       )
       and pg_proc.prosecdef
       and 'search_path=""' = any(pg_proc.proconfig)
       and pg_get_userbyid(pg_proc.proowner) = 'postgres'
   ),
-  9::bigint,
+  13::bigint,
   'every client RPC is security definer, postgres-owned, and fixes an empty search path'
 );
 
@@ -41,13 +45,16 @@ select is(
     where pg_namespace.nspname = 'private'
       and pg_proc.proname in (
         'current_anonymous_user_id',
-        'claim_mutation_operation'
+        'claim_mutation_operation',
+        'current_app_environment',
+        'feed_cursor_token',
+        'feed_batch_response'
       )
       and not pg_proc.prosecdef
       and 'search_path=""' = any(pg_proc.proconfig)
       and pg_get_userbyid(pg_proc.proowner) = 'postgres'
   ),
-  2::bigint,
+  5::bigint,
   'private helpers are security invoker, postgres-owned, and fix an empty search path'
 );
 
@@ -66,7 +73,13 @@ select is(
         ('public.complete_challenge(uuid,uuid)'),
         ('public.list_catalog_products(text,text,text,uuid,integer)'),
         ('public.get_catalog_product(uuid)'),
-        ('public.list_products_for_challenge_slot(uuid,text,uuid,integer)')
+        ('public.list_products_for_challenge_slot(uuid,text,uuid,integer)'),
+        ('public.ensure_session(uuid,text,text,text,text,text)'),
+        ('public.ensure_feed_instance(uuid)'),
+        ('public.append_feed_batch(uuid,text,integer)'),
+        (
+          'public.record_qualified_feed_position(uuid,uuid,uuid,integer)'
+        )
     )
     select count(*)
     from expected
@@ -90,8 +103,8 @@ select is(
           and function_acl.privilege_type = 'EXECUTE'
       )
   ),
-  12::bigint,
-  'only authenticated clients can execute the twelve intended client RPCs'
+  16::bigint,
+  'only authenticated clients can execute the sixteen intended client RPCs'
 );
 
 select ok(
@@ -109,7 +122,13 @@ select ok(
         ('public.complete_challenge(uuid,uuid)'),
         ('public.list_catalog_products(text,text,text,uuid,integer)'),
         ('public.get_catalog_product(uuid)'),
-        ('public.list_products_for_challenge_slot(uuid,text,uuid,integer)')
+        ('public.list_products_for_challenge_slot(uuid,text,uuid,integer)'),
+        ('public.ensure_session(uuid,text,text,text,text,text)'),
+        ('public.ensure_feed_instance(uuid)'),
+        ('public.append_feed_batch(uuid,text,integer)'),
+        (
+          'public.record_qualified_feed_position(uuid,uuid,uuid,integer)'
+        )
     ),
     expected_oids(oid) as (
       select to_regprocedure(expected.signature)::oid
@@ -162,7 +181,11 @@ select ok(
         'start_challenge',
         'select_challenge_item',
         'remove_challenge_item',
-        'complete_challenge'
+        'complete_challenge',
+        'ensure_session',
+        'ensure_feed_instance',
+        'append_feed_batch',
+        'record_qualified_feed_position'
       )
       and pg_proc.proargnames
         && array['anonymous_user_id', 'user_id', 'wardrobe_id']::text[]
@@ -180,6 +203,9 @@ select ok(
       and pg_proc.proname in (
         'current_anonymous_user_id',
         'claim_mutation_operation',
+        'current_app_environment',
+        'feed_cursor_token',
+        'feed_batch_response',
         'complete_onboarding',
         'skip_onboarding',
         'save_product',
@@ -187,7 +213,11 @@ select ok(
         'start_challenge',
         'select_challenge_item',
         'remove_challenge_item',
-        'complete_challenge'
+        'complete_challenge',
+        'ensure_session',
+        'ensure_feed_instance',
+        'append_feed_batch',
+        'record_qualified_feed_position'
       )
       and lower(pg_proc.prosrc) ~ '(^|[^a-z])execute([^a-z]|$)'
   ),
