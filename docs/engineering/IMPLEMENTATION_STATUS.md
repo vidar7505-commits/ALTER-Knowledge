@@ -6,7 +6,7 @@
 
 ## Status
 
-`Configured but awaiting CI validation`.
+`Complete`.
 
 The LR-001 Product Catalog foundation is implemented locally as one
 forward-only migration, a private idempotent repository import, authenticated
@@ -20,11 +20,12 @@ four eligible active products. Stable UUIDs and external identities, fixed
 fixture timestamps, explicit upsert constraints, stable UUID ordering, and
 versioned keyset cursors make unchanged imports and reads deterministic.
 
+GitHub Actions `Database infrastructure validation` passed. A clean database
+reset applied all P08 migrations and deterministic catalog data, strict
+database lint passed, and all eight pgTAP suites passed, including the P08
+catalog, Challenge definition, RLS read-boundary, and pagination coverage.
 Application formatting, ESLint, TypeScript, all 81 unit/integration tests,
-production build, Playwright, and `git diff --check` pass. The new migration
-and pgTAP suite require the authoritative GitHub
-`Database infrastructure validation` workflow before P08 can be marked
-Complete.
+production build, Playwright, and `git diff --check` also passed.
 
 Cloud migrations deployed: None.
 
@@ -69,6 +70,7 @@ Cloud migrations deployed: None.
 - Focused catalog tests: 3 files and 16 tests passed.
 - Full ESLint and TypeScript: passed.
 - Full unit/integration tests: 14 files and 81 tests passed.
+- Application formatting: passed.
 - Production build: passed after the unchanged command received network access
   for the repository's existing Google Fonts.
 - Playwright: 1 Chromium test passed in 18.0 seconds after the sandboxed run
@@ -77,13 +79,19 @@ Cloud migrations deployed: None.
   `//./pipe/dockerDesktopLinuxEngine` was not found.
 - Workstation-local database lint and pgTAP: blocked with
   `LegacyDbConnectError`; local PostgreSQL was unavailable.
-- GitHub database validation with P08: not run; awaiting CI.
+- GitHub database validation with P08: passed.
+- Clean reset, all P08 migrations and deterministic catalog import, strict
+  database lint, and all eight pgTAP suites: passed.
+- P08 catalog, Challenge definition, RLS read boundary, and pagination tests:
+  passed.
+- Application formatting, ESLint, TypeScript, unit/integration tests,
+  production build, and Playwright: passed.
 - Hosted development schema updated: No.
 
 ## Next action
 
-Run the unchanged GitHub `Database infrastructure validation` workflow. Mark P08
-Complete only after clean reset applies the new catalog migration, strict lint
-passes, and all eight pgTAP suites and application gates pass. Then proceed to
-P09 — Application Shell. Discover ranking, external catalog ingestion,
-analytics, dashboards, and hosted migration deployment remain deferred.
+P08 is Complete. `P09 — Application shell` is unblocked: implement the mobile
+bottom navigation, desktop rail, and application boundaries, with keyboard,
+responsive, and visual validation. Discover ranking, external catalog
+ingestion, analytics, dashboards, and hosted migration deployment remain
+deferred.

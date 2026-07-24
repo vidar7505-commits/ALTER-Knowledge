@@ -2,12 +2,13 @@
 
 ## Status
 
-`Configured but awaiting CI validation`.
+`Complete`.
 
-The LR-001 Product Catalog foundation is implemented locally. Application
-validation passes, but the package adds one migration and one pgTAP suite.
-GitHub Actions `Database infrastructure validation` must pass before P08 can be
-marked Complete.
+The LR-001 Product Catalog foundation is implemented and validated. GitHub
+Actions `Database infrastructure validation` passed: a clean reset applied all
+P08 migrations and deterministic catalog data, strict database lint passed, and
+all eight pgTAP suites passed. Application formatting, ESLint, TypeScript,
+unit/integration tests, production build, and Playwright also passed.
 
 Cloud migrations deployed: None.
 
@@ -365,6 +366,7 @@ Existing P04–P07 pgTAP suites are unchanged.
 | `npm.cmd run test:e2e -- --reporter=line --workers=1` | Passed: 1 Chromium test in 18.0 seconds; the sandboxed run timed out while its local server remained active, then the unchanged command passed with local browser/server access. |
 | `npm.cmd run format:check`                            | Passed; all matched files use Prettier style.                                                                                                                                    |
 | `git diff --check`                                    | Passed; Git emitted LF-to-CRLF working-copy warnings only.                                                                                                                       |
+| GitHub Actions `Database infrastructure validation`   | Passed: clean reset, all P08 migrations and deterministic catalog import, strict database lint, and all eight pgTAP suites completed successfully.                               |
 | `npx.cmd supabase db reset --local`                   | Blocked: Docker Desktop Linux-engine pipe `//./pipe/dockerDesktopLinuxEngine` was not found.                                                                                     |
 | `npx.cmd supabase db lint --local --fail-on warning`  | Blocked: `LegacyDbConnectError`; local PostgreSQL was unavailable.                                                                                                               |
 | `npx.cmd supabase test db`                            | Blocked: `LegacyDbConnectError`; local PostgreSQL was unavailable.                                                                                                               |
@@ -383,25 +385,25 @@ was weakened.
 
 ## 22. GitHub CI status
 
-Not run for this uncommitted P08 change set. The unchanged
-`Database infrastructure validation` workflow remains authoritative. P08
-therefore remains `Configured but awaiting CI validation`.
+GitHub Actions `Database infrastructure validation` completed successfully.
 
-Required closure evidence:
+- Clean database reset: passed.
+- All P08 migrations and deterministic catalog data: applied successfully.
+- Strict database lint: passed.
+- All eight pgTAP suites: passed.
+- P08 catalog, Challenge definition, RLS read boundary, and pagination tests:
+  passed.
+- Application formatting, ESLint, TypeScript, unit/integration tests,
+  production build, and Playwright: passed.
 
-1. clean database reset;
-2. successful application of all P08 migrations and repository fixtures;
-3. strict database lint with no warnings;
-4. all eight pgTAP suites;
-5. application formatting, ESLint, TypeScript, unit/integration tests,
-   production build, and Playwright.
+This evidence closes P08 as `Complete`.
 
 ## 23. Cloud deployment status
 
 - Hosted development schema updated: No.
 - Cloud migrations deployed: None.
 - Remote reset: not run.
-- Remote migration push: not run.
+- Remote push: not run.
 - Remote seed push: not run.
 - Supabase project linking: not changed.
 
@@ -424,7 +426,7 @@ Required closure evidence:
 ## 25. Known limitations and deferred work
 
 - Workstation-local database runtime is unavailable; authoritative migration,
-  strict lint, RLS, and pgTAP evidence must come from GitHub CI.
+  strict lint, RLS, and pgTAP evidence came from the successful GitHub CI run.
 - The canonical documents do not freeze normalized category/subcategory, color,
   season, fit, material, or image-host vocabularies. P08 records its minimum
   implementation constraints without elevating them to Product decisions.
@@ -441,12 +443,13 @@ Required closure evidence:
 
 ## 26. Recommended next package/actions
 
-1. Run the unchanged GitHub database validation workflow.
-2. If clean reset, migration application, strict lint, all pgTAP suites, and
-   application gates pass, update P08 to Complete with exact CI evidence.
-3. Proceed to P09 — Application Shell in dependency order.
-4. Keep Discover ranking and feed behavior in P11.
-5. Keep external catalog operations, analytics, dashboards, and hosted
+1. P08 is Complete based on the successful GitHub database and application
+   validation evidence.
+2. Proceed to `P09 — Application shell`: mobile bottom navigation, desktop
+   rail, and application boundaries, validated for keyboard, responsive, and
+   visual behavior.
+3. Keep Discover ranking and feed behavior in P11.
+4. Keep external catalog operations, analytics, dashboards, and hosted
    deployment deferred.
 
 ## 27. Exact changed-file list and suggested commit message
