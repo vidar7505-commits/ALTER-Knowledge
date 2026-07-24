@@ -1,0 +1,306 @@
+.frame {
+  min-height: 100dvh;
+  min-height: 100svh;
+  padding: calc(var(--safe-area-top) + var(--space-5)) var(--layout-gutter)
+    calc(var(--safe-area-bottom) + var(--space-6));
+  background: var(--color-surface-primary);
+}
+
+.brand,
+.wordmark {
+  letter-spacing: 0.28em;
+  text-transform: uppercase;
+}
+
+.brand {
+  position: relative;
+  z-index: 1;
+  font-size: var(--font-size-label);
+  font-weight: var(--font-weight-semibold);
+}
+
+.welcome {
+  display: grid;
+  gap: var(--space-8);
+  max-width: var(--width-content-max);
+  margin: var(--space-6) auto 0;
+}
+
+.hero {
+  position: relative;
+  min-height: clamp(17rem, 52dvh, 34rem);
+  overflow: hidden;
+  background: var(--color-surface-subtle);
+}
+
+.heroImage,
+.choiceImage {
+  object-fit: cover;
+}
+
+.welcomeCopy {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-5);
+  align-self: center;
+  max-width: 38rem;
+}
+
+.supporting {
+  max-width: var(--width-text-max);
+  color: var(--color-text-secondary);
+}
+
+.welcomeActions,
+.controls,
+.errorActions {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+
+.welcomeActions > button,
+.controls > button,
+.errorActions > button {
+  width: 100%;
+}
+
+.quietAction,
+.backAction {
+  min-height: var(--size-touch-target-min);
+  border: 0;
+  background: transparent;
+  color: var(--color-text-primary);
+  font-size: var(--font-size-label);
+  font-weight: var(--font-weight-semibold);
+  text-decoration: underline;
+  text-underline-offset: 0.25rem;
+  cursor: pointer;
+}
+
+.quietAction:disabled,
+.backAction:disabled {
+  cursor: not-allowed;
+  opacity: 0.5;
+}
+
+.step {
+  width: min(100%, 45rem);
+  margin: var(--space-8) auto 0;
+}
+
+.stepHeader {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  margin-bottom: var(--space-6);
+}
+
+.progressText {
+  color: var(--color-text-secondary);
+  text-transform: uppercase;
+}
+
+.progress {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: var(--space-2);
+  width: 6rem;
+}
+
+.progress > span {
+  height: 0.2rem;
+  background: var(--color-border-strong);
+}
+
+.progress > .progressActive {
+  background: var(--color-action-accent);
+}
+
+.styleGrid,
+.moodList {
+  display: grid;
+  gap: var(--space-3);
+}
+
+.styleGrid {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.moodList {
+  grid-template-columns: 1fr;
+}
+
+.choice {
+  position: relative;
+  min-height: 13rem;
+  overflow: hidden;
+  border: var(--border-width-emphasis) solid transparent;
+  border-radius: var(--radius-sm);
+  background: var(--color-surface-subtle);
+  color: var(--color-text-inverse);
+  text-align: left;
+  cursor: pointer;
+}
+
+.moodList .choice {
+  min-height: 8rem;
+}
+
+.choice[aria-pressed='true'] {
+  border-color: var(--color-action-accent);
+}
+
+.choice:disabled {
+  cursor: not-allowed;
+}
+
+.choiceScrim {
+  position: absolute;
+  inset: 35% 0 0;
+  background: linear-gradient(transparent, rgb(17 17 15 / 88%));
+}
+
+.choiceCopy {
+  position: absolute;
+  right: var(--space-3);
+  bottom: var(--space-3);
+  left: var(--space-3);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+}
+
+.choiceLabel {
+  font-size: var(--font-size-heading-md);
+  font-weight: var(--font-weight-semibold);
+}
+
+.choiceDescription {
+  font-size: var(--font-size-caption);
+}
+
+.selectedText {
+  font-size: var(--font-size-micro);
+  font-weight: var(--font-weight-semibold);
+  text-transform: uppercase;
+}
+
+.check {
+  position: absolute;
+  top: var(--space-2);
+  right: var(--space-2);
+  display: grid;
+  width: var(--size-touch-target-min);
+  height: var(--size-touch-target-min);
+  place-items: center;
+  border-radius: var(--radius-pill);
+  background: var(--color-action-accent);
+  color: var(--color-white);
+  font-weight: var(--font-weight-semibold);
+}
+
+.limitMessage {
+  min-height: 1.5rem;
+  margin: var(--space-3) 0;
+  color: var(--color-status-error);
+  font-size: var(--font-size-body-sm);
+}
+
+.controls {
+  padding: var(--space-4) 0;
+  background: var(--color-surface-primary);
+}
+
+.error {
+  position: fixed;
+  right: var(--layout-gutter);
+  bottom: calc(var(--safe-area-bottom) + var(--space-4));
+  left: var(--layout-gutter);
+  z-index: var(--z-index-modal);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  max-width: 40rem;
+  padding: var(--space-5);
+  border: var(--border-width-thin) solid var(--color-status-error);
+  border-radius: var(--radius-md);
+  background: var(--color-surface-raised);
+  box-shadow: var(--elevation-3);
+}
+
+.statusScreen {
+  display: grid;
+  min-height: 100dvh;
+  min-height: 100svh;
+  place-items: center;
+  padding: var(--layout-gutter);
+}
+
+.statusCard {
+  display: flex;
+  width: min(100%, 35rem);
+  flex-direction: column;
+  gap: var(--space-4);
+}
+
+.loadingMark {
+  width: 3rem;
+  height: 0.25rem;
+  background: var(--color-action-accent);
+  animation: loading 1.4s var(--motion-easing-standard) infinite alternate;
+}
+
+@keyframes loading {
+  to {
+    transform: scaleX(0.35);
+    transform-origin: left;
+  }
+}
+
+@media (min-width: 48rem) {
+  .styleGrid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
+  .welcomeActions,
+  .controls,
+  .errorActions {
+    flex-flow: row wrap;
+    align-items: center;
+  }
+
+  .welcomeActions > button,
+  .controls > button,
+  .errorActions > button {
+    width: auto;
+    min-width: 10rem;
+  }
+
+  .moodList {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (min-width: 75rem) {
+  .welcome {
+    grid-template-columns: minmax(0, 1.15fr) minmax(24rem, 0.85fr);
+    min-height: calc(100dvh - 8rem);
+    align-items: center;
+  }
+
+  .hero {
+    min-height: min(72dvh, 46rem);
+  }
+
+  .error {
+    right: var(--space-8);
+    left: auto;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .loadingMark {
+    animation: none;
+  }
+}

@@ -213,7 +213,7 @@ test('identity loading and recoverable error states remain stable', async ({
   await page.setViewportSize({ width: 390, height: 844 });
   await page.goto('/discover');
   await expect(
-    page.getByRole('heading', { level: 1, name: 'Preparing your space' }),
+    page.getByRole('heading', { level: 1, name: 'Finding your place' }),
   ).toBeVisible();
   await expect(page.getByText('A L T E R .', { exact: true })).toBeVisible();
   await captureViewport(page, testInfo, 'shell-identity-loading-390');

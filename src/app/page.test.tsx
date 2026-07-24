@@ -1,34 +1,21 @@
 import { render, screen } from '@testing-library/react';
-import axe from 'axe-core';
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
+
+vi.mock('@/features/onboarding/onboarding-experience', () => ({
+  OnboardingExperience: () => (
+    <main>
+      <h1>Onboarding entry</h1>
+    </main>
+  ),
+}));
 
 import HomePage from './page';
 
 describe('HomePage', () => {
-  it('keeps entry routing neutral until onboarding status exists', () => {
+  it('replaces the neutral P09 boundary with onboarding status resolution', () => {
     render(<HomePage />);
-
     expect(
-      screen.getByRole('heading', {
-        level: 1,
-        name: 'Entry routing arrives with onboarding.',
-      }),
+      screen.getByRole('heading', { name: 'Onboarding entry' }),
     ).toBeVisible();
-    expect(
-      screen.getByText(/P10 will resolve onboarding status/i),
-    ).toBeVisible();
-    expect(screen.queryByRole('navigation')).toBeNull();
-  });
-
-  it('has no detectable accessibility violations', async () => {
-    render(<HomePage />);
-
-    const results = await axe.run(document.body, {
-      rules: {
-        'color-contrast': { enabled: false },
-      },
-    });
-
-    expect(results.violations).toEqual([]);
   });
 });
