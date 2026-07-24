@@ -19,7 +19,7 @@ $$;
 create or replace function private.telemetry_is_timestamptz(p_value text)
 returns boolean
 language plpgsql
-immutable
+stable
 security invoker
 set search_path = ''
 as $$
@@ -296,7 +296,7 @@ create or replace function private.telemetry_value_matches(
 )
 returns boolean
 language plpgsql
-immutable
+stable
 security invoker
 set search_path = ''
 as $$
@@ -432,7 +432,7 @@ $$;
 create or replace function private.telemetry_redact(p_value jsonb)
 returns jsonb
 language plpgsql
-immutable
+stable
 security invoker
 set search_path = ''
 as $$
@@ -472,7 +472,7 @@ $$;
 create or replace function private.telemetry_safe_payload(p_value jsonb)
 returns jsonb
 language sql
-immutable
+stable
 security invoker
 set search_path = ''
 as $$
@@ -510,7 +510,7 @@ security invoker
 set search_path = ''
 as $$
 declare
-  errors text[] := '{}';
+  errors text[] := array[]::text[];
   event_name text;
   event_version numeric;
   contract jsonb;
@@ -807,7 +807,7 @@ declare
   received_at timestamptz := statement_timestamp();
   raw_event jsonb;
   event_index integer;
-  event_id uuid;
+  canonical_event_id uuid;
   event_errors text[];
   result_errors text[];
   result_status text;
@@ -939,7 +939,7 @@ begin
     select item.value, (item.ordinality - 1)::integer
     from jsonb_array_elements(p_events) with ordinality as item(value, ordinality)
   loop
-    event_id := null;
+    canonical_event_id := null;
     result_errors := '{}';
     result_status := null;
     inserted_received_at := null;
@@ -947,7 +947,7 @@ begin
     if jsonb_typeof(raw_event) = 'object'
       and jsonb_typeof(raw_event -> 'event_id') = 'string'
       and private.telemetry_is_uuid(raw_event ->> 'event_id') then
-      event_id := (raw_event ->> 'event_id')::uuid;
+      canonical_event_id := (raw_event ->> 'event_id')::uuid;
     end if;
 
     if session_error is not null then
@@ -1014,7 +1014,7 @@ begin
       ) as unique_errors;
 
       if cardinality(result_errors) = 0
-        and event_id is not null then
+        and canonical_event_id is not null then
         insert into public.events (
           event_id,
           event_name,
@@ -1038,7 +1038,7 @@ begin
           preview_namespace
         )
         values (
-          event_id,
+          canonical_event_id,
           raw_event ->> 'event_name',
           (raw_event ->> 'event_version')::integer,
           (raw_event ->> 'occurred_at')::timestamptz,
@@ -1069,7 +1069,7 @@ begin
           end,
           session_row.preview_namespace
         )
-        on conflict (event_id) do nothing
+        on conflict on constraint events_pkey do nothing
         returning events.received_at into inserted_received_at;
 
         if inserted_received_at is not null then
@@ -1083,7 +1083,7 @@ begin
           select events.*
           into existing_event
           from public.events
-          where events.event_id = event_id;
+          where events.event_id = canonical_event_id;
 
           canonical_matches :=
             existing_event.anonymous_user_id = owner_row.id
@@ -1149,7 +1149,7 @@ begin
     results := results || jsonb_build_array(
       jsonb_build_object(
         'index', event_index,
-        'event_id', event_id,
+        'event_id', canonical_event_id,
         'status', result_status,
         'error_codes', to_jsonb(result_errors),
         'received_at', coalesce(inserted_received_at, received_at)
