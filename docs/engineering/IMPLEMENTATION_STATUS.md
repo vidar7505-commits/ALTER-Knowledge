@@ -6,7 +6,7 @@
 
 ## Status
 
-`Configured but awaiting CI validation`.
+`Complete`.
 
 The LR-001 application shell is implemented locally as one identity-aware
 product layout, one typed three-destination navigation model, a safe-area-aware
@@ -14,11 +14,10 @@ mobile/tablet bottom navigation, an offset desktop rail, route-level content
 boundaries, explicit identity loading/error recovery, shell offline indication,
 and removable route placeholders.
 
-All local completion gates pass: formatting, ESLint, TypeScript, 92
-unit/component/integration tests, production build, 4 Playwright tests with one
-worker, explicit visual review at canonical viewports, and
-`git diff --check`. GitHub application CI has not run against this uncommitted
-and unpushed P09 working tree.
+GitHub application validation completed successfully. Formatting, ESLint,
+TypeScript, 17 unit/component/integration test files with 92 tests, the
+production build, and 4 Chromium Playwright tests with one worker passed.
+Responsive, keyboard, accessibility, and visual shell validation also passed.
 
 Database changes: None.
 Cloud migrations deployed: None.
@@ -59,12 +58,13 @@ Cloud migrations deployed: None.
 - `npm.cmd run test:e2e -- --reporter=line --workers=1`: passed, 4 Chromium
   tests.
 - Axe structural component validation: passed within the unit test command.
+- Responsive, keyboard, accessibility, and visual shell validation: passed.
 - Visual review: passed at M320, M390, T768, D1440, D1728, identity loading,
   and recoverable-error states; landscape, 1024 px, and 1200 px boundaries also
   passed behavioral inspection.
 - `git diff --check`: passed with working-copy line-ending warnings only.
 - Database validation: not run because P09 changes no database file.
-- GitHub application CI with P09: pending.
+- GitHub application validation with P09: passed.
 - Hosted development schema updated: No.
 
 ## Explicitly deferred
@@ -75,6 +75,7 @@ Cloud migrations deployed: None.
 - Product Detail route and source-context behavior (`P12`).
 - Wardrobe save/remove UI (`P13`).
 - Outfit Challenge behavior (`P14`).
+- Return continuation and priority behavior (`P15`).
 - Durable offline queues, cached feature content, and mutation recovery
   (`P16`).
 - Certified analytics, dashboards, and reconciliation (`P17`).
@@ -83,6 +84,6 @@ Cloud migrations deployed: None.
 
 ## Next action
 
-Run GitHub application CI against P09. If it passes, mark P09 Complete and
-proceed to `P10 — Onboarding`: implement the three-step onboarding flow and
-persistence with complete, skip, and retry event validation.
+P09 is Complete and `P10 — Onboarding` is unblocked. Implement the confirmed
+three-step onboarding flow and persistence with complete, skip, and retry event
+validation.

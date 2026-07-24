@@ -2,13 +2,13 @@
 
 ## Status
 
-`Configured but awaiting CI validation`.
+`Complete`.
 
-The LR-001 application shell is implemented and validated locally. All required
-formatting, lint, TypeScript, unit/component, production-build, Playwright, and
-diff checks pass. Explicit visual review is complete at the canonical
-viewports. This uncommitted local state has not been pushed, so GitHub
-application CI has not validated P09.
+The LR-001 application shell is implemented and complete. GitHub application
+validation passed, including formatting, ESLint, TypeScript, 17
+unit/component/integration test files with 92 tests, the production build, and
+4 Chromium Playwright tests with one worker. Responsive, keyboard,
+accessibility, and visual shell validation passed.
 
 Database changes: None.
 Cloud migrations deployed: None.
@@ -346,17 +346,21 @@ Axe component checks run inside `npm.cmd run test`.
 
 ## 23. GitHub CI status
 
-`Configured but awaiting CI validation`.
+`Complete`.
 
-The repository application workflow exists, but this uncommitted and unpushed
-P09 working tree has not run in GitHub Actions. No CI pass is claimed.
+GitHub application validation completed successfully. Formatting, ESLint,
+TypeScript, 92 tests across 17 test files, the production build, and 4 Chromium
+Playwright tests with one worker passed.
 
 ## 24. Cloud deployment status
 
 - Cloud deployment: None.
 - Cloud migrations deployed: None.
 - Hosted development schema updated: No.
-- Remote reset, migration push, seed push, and project linking: not run.
+- Remote reset: not run.
+- Remote push: not run.
+- Remote seed push: not run.
+- Project linking: not run.
 
 ## 25. Security review
 
@@ -399,7 +403,8 @@ migration, RLS, RPC, catalog, or telemetry decision was modified.
   with their owning feature packages because those routes do not yet exist.
 - Offline indication does not imply mutation queuing or cached feature content;
   P16 owns durable recovery.
-- CI is pending because no commit or push was authorized.
+- Feature-complete onboarding, Discover, Product Detail, Wardrobe, and
+  Challenge remain deferred to their owning packages.
 
 ## 28. Deferred feature work
 
@@ -408,18 +413,17 @@ migration, RLS, RPC, catalog, or telemetry decision was modified.
 - P12: Product Detail and source-context return.
 - P13: Wardrobe state and removal UI.
 - P14: Outfit Challenge.
+- P15: return continuation and priority behavior.
 - P16: durable offline/recovery.
+- P17: analytics QA and executable reconciliation.
 - P18: release-wide accessibility and visual polish.
 
 ## 29. Recommended next package
 
-First run the application CI workflow against the P09 change and close P09 as
-Complete if it passes. Then proceed to:
-
 `P10 — Onboarding`
 
-Frozen P10 scope: three-step flow and persistence, with
-complete/skip/retry-event validation.
+P09 is Complete, so P10 is unblocked. Frozen P10 scope: three-step flow and
+persistence, with complete/skip/retry-event validation.
 
 ## 30. Exact changed-file list
 
