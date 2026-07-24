@@ -2,11 +2,11 @@
 
 ## Status
 
-`Configured but awaiting CI validation`.
+`Complete`.
 
-P07 is implemented locally. It is not marked Complete because it adds a
-forward-only migration and a pgTAP suite that have not yet run in the
-authoritative GitHub database workflow.
+GitHub Actions `Database infrastructure validation` passed. Clean database
+reset, P07 migration application, strict database lint, all pgTAP suites, and
+all application gates passed.
 
 Cloud migrations deployed: None.
 
@@ -382,6 +382,17 @@ Existing P04–P06 SQL suites are unchanged.
 No unsafe Docker workaround was attempted. No test, SQL assertion, or CI gate
 was weakened.
 
+Authoritative GitHub database validation also passed:
+
+- clean database reset: passed;
+- all P07 migrations applied successfully;
+- strict database lint: passed after correcting incorrect `IMMUTABLE`
+  declarations, explicit `text[]` initializer typing, and the ingestion
+  `event_id` variable/column ambiguity;
+- all telemetry and existing pgTAP suites: passed;
+- application formatting, ESLint, TypeScript, unit/integration tests,
+  production build, and Playwright: passed.
+
 ## 20. Local runtime status
 
 - Application unit/integration runtime: passed, 65 tests.
@@ -394,9 +405,16 @@ was weakened.
 
 ## 21. GitHub CI status
 
-Not run for this uncommitted P07 change set. The unchanged
-`Database infrastructure validation` workflow remains authoritative. P07
-therefore remains `Configured but awaiting CI validation`.
+Passed. GitHub Actions `Database infrastructure validation` verified:
+
+1. clean database reset;
+2. successful P07 migration application;
+3. strict database lint;
+4. all telemetry and existing pgTAP suites;
+5. application formatting, ESLint, TypeScript, unit/integration tests,
+   production build, and Playwright.
+
+P07 is Complete.
 
 ## 22. Cloud deployment status
 
@@ -404,6 +422,7 @@ therefore remains `Configured but awaiting CI validation`.
 - Cloud migrations deployed: None.
 - Remote reset: not run.
 - Remote push: not run.
+- Remote seed push: not run.
 - Supabase project linking: not changed.
 
 ## 23. Security review
@@ -438,10 +457,11 @@ Not implemented:
 - remote migration/reset/linking;
 - commit or push.
 
-## 25. Known limitations and blockers
+## 25. Known limitations
 
-- Database runtime behavior is awaiting CI because the workstation has
-  historically lacked the Docker Desktop Linux-engine pipe.
+- Workstation-local database runtime remains unavailable because the Docker
+  Desktop Linux-engine pipe is absent; authoritative GitHub database validation
+  passed.
 - The bounded queue is in memory only; durable offline persistence remains P16.
 - Product feature packages must wire canonical success/failure events after
   their state transactions resolve.
@@ -450,18 +470,15 @@ Not implemented:
 - Arrival order is not used to reject sequence regression because canonical
   offline events may arrive out of order; sequence is validated as a
   nonnegative integer and preserved for analytical ordering.
-- CI must prove migration syntax, strict lint, behavior, and clean-reset
-  compatibility before P07 may be Complete.
 
 ## 26. Recommended next package/actions
 
-1. Run the unchanged GitHub database validation workflow.
-2. If it passes, update this handoff and status from awaiting validation to
-   Complete with the exact run evidence.
-3. Proceed to P08 Product Catalog in dependency order.
-4. Keep P10–P15 feature event wiring behind this typed service.
-5. Implement durable offline replay only in P16.
-6. Implement certified analytics/reconciliation only in P17.
+1. Proceed to P08 Product Catalog in dependency order; it is now unblocked.
+2. Keep P10–P15 feature event wiring behind this typed service.
+3. Implement durable offline replay only in P16.
+4. Implement certified analytics/reconciliation only in P17.
+5. Keep analytics views, dashboards, and production ingestion deferred until
+   their approved packages.
 
 ## 27. Suggested commit message
 

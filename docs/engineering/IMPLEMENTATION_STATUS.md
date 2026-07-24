@@ -6,7 +6,7 @@
 
 ## Status
 
-`Configured but awaiting CI validation`.
+`Complete`.
 
 The LR-001 telemetry foundation is implemented locally as a typed, bounded
 browser service, an authenticated Next.js ingestion route, a server-only
@@ -17,11 +17,12 @@ version, preview/test classification, validates all 40 version-1 events,
 inserts valid events, quarantines invalid payloads with redaction, and provides
 ordered per-item batch results.
 
-Application formatting, ESLint, TypeScript, all 65 unit/integration tests,
-production build, Playwright, and `git diff --check` pass. The new migration and
-pgTAP suite still require the authoritative GitHub
-`Database infrastructure validation` workflow before P07 can be marked
-Complete.
+GitHub Actions `Database infrastructure validation` passed. Its clean database
+reset applied all P07 migrations, strict database lint passed after correcting
+function volatility, `text[]` initializer typing, and the ingestion
+`event_id` variable/column ambiguity, and all pgTAP suites passed. Application
+formatting, ESLint, TypeScript, all 65 unit/integration tests, production build,
+Playwright, and `git diff --check` also passed.
 
 Cloud migrations deployed: None.
 
@@ -72,12 +73,18 @@ Cloud migrations deployed: None.
   `//./pipe/dockerDesktopLinuxEngine` was not found.
 - Workstation-local database lint and pgTAP: blocked with
   `LegacyDbConnectError`; local PostgreSQL was unavailable.
-- GitHub database validation with P07: not run; awaiting CI.
+- GitHub database validation with P07: passed.
+- Clean database reset in CI: passed.
+- P07 migration application in CI: passed.
+- Strict database lint in CI: passed.
+- All telemetry and existing pgTAP suites in CI: passed.
+- Application formatting, ESLint, TypeScript, unit/integration tests,
+  production build, and Playwright in CI: passed.
 - Hosted development schema updated: No.
 
 ## Next action
 
-Run the complete local validation matrix, record the exact workstation
-Supabase outcomes, then submit the uncommitted change set for the unchanged
-GitHub database validation workflow. Mark P07 Complete only after that workflow
-passes clean reset, strict lint, all pgTAP suites, and application gates.
+P08 — Product Catalog is now unblocked. Proceed with curated catalog seed/import
+and read-query work while preserving P07's trusted ingestion, quarantine,
+idempotency, and client-denial boundaries. Analytics views, dashboards,
+production ingestion, and hosted migration deployment remain deferred.
