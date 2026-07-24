@@ -464,6 +464,13 @@ values
     1
   );
 
+create temporary table p06_product_rls_baseline on commit drop as
+select count(*) as active_product_count
+from public.products
+where products.is_active;
+
+grant select on table p06_product_rls_baseline to authenticated;
+
 set local role anon;
 set local "request.jwt.claim.sub" = '';
 set local "request.jwt.claims" = '{"role":"anon"}';
@@ -562,8 +569,21 @@ select is(
 
 select is(
   (select count(*) from public.products),
-  1::bigint,
-  'authenticated catalog reads expose only active products'
+  (
+    select active_product_count
+    from pg_temp.p06_product_rls_baseline
+  ),
+  'authenticated catalog reads expose every active product'
+);
+
+select is(
+  (
+    select count(*)
+    from public.products
+    where not products.is_active
+  ),
+  0::bigint,
+  'authenticated catalog reads expose no inactive products'
 );
 
 select is(
