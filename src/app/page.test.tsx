@@ -5,26 +5,19 @@ import { describe, expect, it } from 'vitest';
 import HomePage from './page';
 
 describe('HomePage', () => {
-  it('renders a non-product token verification surface and typography roles', () => {
+  it('keeps entry routing neutral until onboarding status exists', () => {
     render(<HomePage />);
 
     expect(
       screen.getByRole('heading', {
-        name: 'A L T E R . visual foundation',
+        level: 1,
+        name: 'Entry routing arrives with onboarding.',
       }),
     ).toBeVisible();
-    expect(screen.getByText(/token verification/i)).toBeVisible();
     expect(
-      screen.getByRole('heading', { name: 'Typography roles' }),
+      screen.getByText(/P10 will resolve onboarding status/i),
     ).toBeVisible();
-    expect(screen.getByText(/Ğğ İı Şş Çç Öö Üü/)).toBeVisible();
-    expect(
-      screen.getByRole('button', { name: /verify focus/i }),
-    ).toHaveAttribute('type', 'button');
-
-    expect(
-      screen.queryByText(/add to cart|buy now|wardrobe|challenge/i),
-    ).toBeNull();
+    expect(screen.queryByRole('navigation')).toBeNull();
   });
 
   it('has no detectable accessibility violations', async () => {

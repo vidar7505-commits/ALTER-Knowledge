@@ -2,96 +2,87 @@
 
 ## Current package
 
-`P08 — Product Catalog`
+`P09 — Application Shell`
 
 ## Status
 
-`Complete`.
+`Configured but awaiting CI validation`.
 
-The LR-001 Product Catalog foundation is implemented locally as one
-forward-only migration, a private idempotent repository import, authenticated
-RLS-safe read RPCs, a typed application query service, deterministic test
-doubles, and behavior-first pgTAP and Vitest coverage.
+The LR-001 application shell is implemented locally as one identity-aware
+product layout, one typed three-destination navigation model, a safe-area-aware
+mobile/tablet bottom navigation, an offset desktop rail, route-level content
+boundaries, explicit identity loading/error recovery, shell offline indication,
+and removable route placeholders.
 
-The repository-controlled dataset contains 16 active products, one inactive
-product, the 12-option `onboarding-style-v1` preference definition, and the
-active `challenge-evening-v1` After Dark definition. Every Challenge slot has
-four eligible active products. Stable UUIDs and external identities, fixed
-fixture timestamps, explicit upsert constraints, stable UUID ordering, and
-versioned keyset cursors make unchanged imports and reads deterministic.
+All local completion gates pass: formatting, ESLint, TypeScript, 92
+unit/component/integration tests, production build, 4 Playwright tests with one
+worker, explicit visual review at canonical viewports, and
+`git diff --check`. GitHub application CI has not run against this uncommitted
+and unpushed P09 working tree.
 
-GitHub Actions `Database infrastructure validation` passed. A clean database
-reset applied all P08 migrations and deterministic catalog data, strict
-database lint passed, and all eight pgTAP suites passed, including the P08
-catalog, Challenge definition, RLS read-boundary, and pagination coverage.
-Application formatting, ESLint, TypeScript, all 81 unit/integration tests,
-production build, Playwright, and `git diff --check` also passed.
-
+Database changes: None.
 Cloud migrations deployed: None.
 
 ## Implemented scope
 
-- Deterministic `lr001-catalog-v1` repository dataset with 16 active and one
-  inactive product.
-- Stable product UUIDs and unique `alter_repository` external identities.
-- Categories, subcategories, seven curated brand labels, descriptive
-  attributes, paired EUR prices, and explicit slot eligibility.
-- One allow-listed HTTPS image per product with width, height, aspect ratio,
-  primary index, and accessible alt metadata.
-- Versioned 12-choice onboarding taxonomy matching the approved Design labels.
-- Canonical `challenge-evening-v1` After Dark definition with Top, Bottom,
-  Shoes, and Layer or Accessory slots.
-- Private, browser-inaccessible catalog import with explicit primary-key
-  upserts and unchanged-row timestamp preservation.
-- Authenticated-only active catalog read RPCs for listing, product detail, and
-  Challenge slot eligibility.
-- Stable UUID keyset ordering with versioned, secrets-free application cursors.
-- Typed list, detail, filter, empty, not-found, invalid-cursor, and malformed
-  response behavior.
-- Deterministic in-memory catalog data source and narrow Supabase RPC adapter.
-- New behavior-first catalog pgTAP suite and 16 application assertions.
-
-## Explicitly deferred
-
-- Personalized Discover ranking, feed instances, impression behavior, and
-  scroll restoration (`P11`).
-- Product Detail, Wardrobe, and Challenge UI (`P12`–`P14`).
-- External supplier synchronization, scraping, price refresh, inventory,
-  checkout, and production catalog operations.
-- Production asset pipeline and repository-owned image binaries.
-- Durable offline/recovery behavior (`P16`).
-- Certified analytics views, dashboards, and reconciliation jobs (`P17`).
-- Production deployment or hosted-development migration application.
+- Shared `(product)` App Router layout with one shell render across primary
+  routes.
+- Canonical navigation order: Discover, Wardrobe, Challenge.
+- One typed navigation model consumed by mobile and desktop renderers.
+- Mobile/tablet bottom navigation through 1199 px, including safe-area
+  clearance and non-obscured main content.
+- Fixed 88 px desktop rail from 1200 px and expanded 200 px rail from 1600 px.
+- Active route indication through `aria-current`, accent edge, surface change,
+  and non-color marker.
+- Existing P05 anonymous identity bootstrap consumed through one provider.
+- Loading, ready, recoverable-error, and unrecoverable-error presentation.
+- Explicit Retry only for recoverable identity failures.
+- Offline, reconnection, and restored-online shell status without claiming
+  durable offline support.
+- Skip link, main landmark, route focus transfer, native keyboard order,
+  visible focus, reduced motion, and unique navigation landmarks.
+- Development-boundary placeholders for `/discover`, `/wardrobe`, and
+  `/challenge`.
+- Neutral root entry boundary pending P10 onboarding-status resolution; P09
+  does not redirect around onboarding.
+- Route loading and local error boundaries inside the preserved shell.
+- Deterministic local E2E identity interception with no hosted credentials.
 
 ## Validation status
 
-- Supabase CLI: `2.109.1`.
-- Focused catalog TypeScript/ESLint checks: passed.
-- Focused catalog tests: 3 files and 16 tests passed.
-- Full ESLint and TypeScript: passed.
-- Full unit/integration tests: 14 files and 81 tests passed.
-- Application formatting: passed.
-- Production build: passed after the unchanged command received network access
-  for the repository's existing Google Fonts.
-- Playwright: 1 Chromium test passed in 18.0 seconds after the sandboxed run
-  timed out while its local server remained active.
-- Workstation-local reset: blocked because
-  `//./pipe/dockerDesktopLinuxEngine` was not found.
-- Workstation-local database lint and pgTAP: blocked with
-  `LegacyDbConnectError`; local PostgreSQL was unavailable.
-- GitHub database validation with P08: passed.
-- Clean reset, all P08 migrations and deterministic catalog import, strict
-  database lint, and all eight pgTAP suites: passed.
-- P08 catalog, Challenge definition, RLS read boundary, and pagination tests:
-  passed.
-- Application formatting, ESLint, TypeScript, unit/integration tests,
-  production build, and Playwright: passed.
+- `npm.cmd run format:check`: passed.
+- `npm.cmd run lint`: passed.
+- `npm.cmd run typecheck`: passed.
+- `npm.cmd run test`: passed, 17 files and 92 tests.
+- `npm.cmd run build`: passed after the unchanged command received network
+  access for the repository's existing Google Fonts.
+- `npm.cmd run test:e2e -- --reporter=line --workers=1`: passed, 4 Chromium
+  tests.
+- Axe structural component validation: passed within the unit test command.
+- Visual review: passed at M320, M390, T768, D1440, D1728, identity loading,
+  and recoverable-error states; landscape, 1024 px, and 1200 px boundaries also
+  passed behavioral inspection.
+- `git diff --check`: passed with working-copy line-ending warnings only.
+- Database validation: not run because P09 changes no database file.
+- GitHub application CI with P09: pending.
 - Hosted development schema updated: No.
+
+## Explicitly deferred
+
+- Onboarding UI, persistence, and entry routing (`P10`).
+- Discover feed, ranking, continuation, telemetry, and scroll restoration
+  (`P11`).
+- Product Detail route and source-context behavior (`P12`).
+- Wardrobe save/remove UI (`P13`).
+- Outfit Challenge behavior (`P14`).
+- Durable offline queues, cached feature content, and mutation recovery
+  (`P16`).
+- Certified analytics, dashboards, and reconciliation (`P17`).
+- Release-wide accessibility certification and visual polish (`P18`).
+- Production deployment and hosted configuration.
 
 ## Next action
 
-P08 is Complete. `P09 — Application shell` is unblocked: implement the mobile
-bottom navigation, desktop rail, and application boundaries, with keyboard,
-responsive, and visual validation. Discover ranking, external catalog
-ingestion, analytics, dashboards, and hosted migration deployment remain
-deferred.
+Run GitHub application CI against P09. If it passes, mark P09 Complete and
+proceed to `P10 — Onboarding`: implement the three-step onboarding flow and
+persistence with complete, skip, and retry event validation.

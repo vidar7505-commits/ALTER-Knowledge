@@ -1,0 +1,79 @@
+.placeholder {
+  display: grid;
+  width: min(100%, var(--width-content-max));
+  min-height: calc(
+    100svh - var(--size-header) - var(--size-navigation-bottom) -
+      var(--space-16)
+  );
+  margin-inline: auto;
+  align-content: space-between;
+  gap: var(--space-16);
+}
+
+.introduction {
+  display: flex;
+  max-width: 48rem;
+  flex-direction: column;
+  gap: var(--space-4);
+}
+
+.eyebrow,
+.boundaryLabel {
+  color: var(--color-text-secondary);
+  text-transform: uppercase;
+}
+
+.description {
+  max-width: var(--width-text-max);
+  color: var(--color-text-secondary);
+}
+
+.boundary {
+  display: grid;
+  max-width: 48rem;
+  gap: var(--space-3);
+  padding: var(--space-6);
+  border: var(--border-width-thin) solid var(--color-border-strong);
+  border-radius: var(--radius-md);
+  background:
+    linear-gradient(
+      135deg,
+      transparent 0 48%,
+      var(--color-border-subtle) 48% 52%,
+      transparent 52% 100%
+    ),
+    var(--color-surface-subtle);
+  background-size: var(--space-8) var(--space-8);
+}
+
+.boundary > * {
+  width: fit-content;
+  max-width: 100%;
+  background: var(--color-surface-subtle);
+  box-shadow:
+    var(--space-2) 0 var(--color-surface-subtle),
+    calc(var(--space-2) * -1) 0 var(--color-surface-subtle);
+}
+
+.boundaryCopy {
+  color: var(--color-text-secondary);
+}
+
+@media (min-width: 48rem) {
+  .placeholder {
+    min-height: calc(
+      100svh - var(--size-header) - var(--size-navigation-bottom) -
+        var(--space-24)
+    );
+  }
+
+  .boundary {
+    padding: var(--space-8);
+  }
+}
+
+@media (min-width: 75rem) {
+  .placeholder {
+    min-height: calc(100svh - var(--space-24) * 1.5);
+  }
+}
