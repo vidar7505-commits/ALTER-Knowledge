@@ -6,20 +6,19 @@
 
 ## Status
 
-Configured but awaiting CI validation
+Complete
 
-P10 remains Complete. P11A now configures forward-only, ownership-safe database
+P10 remains Complete. P11A provides validated forward-only, ownership-safe database
 boundaries for session recovery, feed-instance recovery, deterministic batch
 persistence, cursor/loaded-depth state, and qualified-depth persistence.
-P11 — Discover remains **Blocked by database boundary** until the authoritative
-GitHub database workflow applies the migration and passes strict lint plus all
-pgTAP suites.
+The authoritative GitHub `Database infrastructure validation` workflow passed,
+so **P11 — Discover is Ready (unblocked)**. P11 remains unimplemented.
 
-Database changes: One new forward-only P11A migration.
+Database changes: validated by CI.
 Cloud migrations deployed: None.
 Hosted development schema updated: No.
 Remote reset: not run.
-Remote push: not run.
+Remote migration push: not run.
 Remote seed push: not run.
 
 ## Validation status
@@ -36,10 +35,15 @@ Remote seed push: not run.
   PostgreSQL is unavailable.
 - `npx.cmd supabase test db`: blocked because local PostgreSQL is unavailable.
 - `git diff --check`: passed (line-ending normalization warnings only).
-- GitHub database CI: configured but awaiting CI validation.
+- GitHub database CI: passed.
+- Clean database reset: passed.
+- Migration application: passed; all migrations, including P11A, applied
+  successfully.
+- Strict database lint: passed with no warnings.
+- pgTAP: passed; all suites, including P11A, passed.
 - Cloud deployment: None; no remote commands were run.
 
-## Configured P11A scope
+## Validated P11A scope
 
 - `ensure_session` with Auth-derived ownership, 30-minute recovery, serialized
   session numbering, return classification, and server-owned environment/test
@@ -69,11 +73,15 @@ No direct session/feed table DML grant, caller-controlled owner field,
 service-role credential, existing migration edit, UI change, remote reset,
 project link, or deployment was introduced. All four RPCs derive ownership from
 `auth.uid()`, fix an empty `search_path`, and grant execution only to
-`authenticated`. Catalog ordering is deterministic and introduces no ranking
-model.
+`authenticated` on the approved signatures. `PUBLIC` and `anon` execution
+remain revoked. Browser feed-table DML remains denied: there is no service-role
+use and no direct client mutation. Catalog ordering remains deterministic, the
+private cursor replay ledger remains authoritative, and qualified depth remains
+monotonic. No ranking model was introduced.
 
 ## Next action
 
-Run the authoritative GitHub database validation workflow. Mark P11A Complete
-and unblock **P11 — Discover** only after clean reset, strict lint, all pgTAP
-suites, and application gates pass.
+Proceed to **P11 — Discover**, now Ready (unblocked), with the plan-frozen scope:
+deterministic feed and cursor behavior, pagination, restoration, visibility,
+and qualified impressions. Do not treat P11 as Complete. P12 and later feature
+packages remain deferred.

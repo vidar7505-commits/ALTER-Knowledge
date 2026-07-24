@@ -2,11 +2,12 @@
 
 ## Status
 
-`Configured but awaiting CI validation`.
+`Complete`.
 
-P10 remains Complete. P11 — Discover remains **Blocked by database boundary**
-until GitHub database validation applies the P11A migration on a clean database
-and passes strict lint, all pgTAP suites, and the application gates.
+P10 remains Complete. The authoritative GitHub `Database infrastructure
+validation` workflow applied the P11A migration on a clean database and passed
+strict lint plus every pgTAP suite. **P11 — Discover is Ready (unblocked)** and
+remains unimplemented.
 
 Cloud migrations deployed: None. Hosted development schema updated: No.
 
@@ -295,36 +296,40 @@ weakened.
 | `npx.cmd supabase db lint --local --fail-on warning` | Blocked: `LegacyDbConnectError`; local PostgreSQL was unavailable.                                                                            |
 | `npx.cmd supabase test db`                           | Blocked: `LegacyDbConnectError`; local PostgreSQL was unavailable.                                                                            |
 | `git diff --check`                                   | Passed in final validation with line-ending warnings only.                                                                                    |
+| GitHub clean database reset                          | Passed.                                                                                                                                       |
+| GitHub migration application                         | Passed: all migrations, including P11A, applied successfully.                                                                                 |
+| GitHub strict database lint                          | Passed with no warnings.                                                                                                                      |
+| GitHub pgTAP                                         | Passed: all suites, including P11A.                                                                                                           |
 
 ## 19. Local Supabase runtime status
 
 The workstation cannot start the disposable Supabase database because Docker
 Desktop's Linux-engine pipe is absent. No unsafe workaround was attempted.
-Migration application, PostgreSQL lint, and pgTAP runtime therefore remain
-unverified locally.
+Migration application, PostgreSQL lint, and pgTAP runtime remain unavailable
+locally; the successful GitHub database workflow supplied authoritative runtime
+validation.
 
 Application formatting, lint, TypeScript, unit/integration tests, and production
 build passed.
 
 ## 20. GitHub CI status
 
-Configured but awaiting CI validation.
+Passed. The authoritative GitHub `Database infrastructure validation` workflow
+proved:
 
-The existing authoritative database workflow must still prove:
+1. the clean database reset passed;
+2. all migrations, including P11A, applied successfully;
+3. strict database lint passed with no warnings;
+4. all existing and P11A pgTAP suites passed.
 
-1. clean reset and migration application;
-2. strict database lint without warnings;
-3. all existing and P11A pgTAP suites;
-4. application formatting, ESLint, TypeScript, tests, and build.
-
-P11A is not Complete and P11 is not unblocked until that workflow passes.
+P11A is Complete. P11 — Discover is Ready (unblocked), but is not Complete.
 
 ## 21. Cloud deployment status
 
 - Cloud migrations deployed: None.
 - Hosted development schema updated: No.
 - Remote reset: not run.
-- Remote push: not run.
+- Remote migration push: not run.
 - Remote seed push: not run.
 - Supabase project linking: unchanged.
 
@@ -342,7 +347,8 @@ P11A is not Complete and P11 is not unblocked until that workflow passes.
 
 ## 23. Known limitations
 
-- Local SQL runtime is unavailable; CI remains authoritative.
+- Local SQL runtime is unavailable; successful GitHub database CI supplied the
+  authoritative validation.
 - A hosted Supabase project that creates sessions through `ensure_session`
   requires its trusted `app.settings.environment` database setting. Clean local
   reset defaults to `local`; no hosted setting was changed in P11A.
@@ -354,7 +360,7 @@ P11A is not Complete and P11 is not unblocked until that workflow passes.
 - Catalog changes during an unfinished feed can affect only not-yet-persisted
   membership; already persisted order never changes.
 
-## 24. Exact changed-file list
+## 24. P11A implementation changed-file list
 
 Created:
 
@@ -369,12 +375,10 @@ Modified:
 
 ## 25. Recommended next action
 
-Run the authoritative GitHub database validation workflow. If and only if clean
-reset, strict lint, all pgTAP suites, and application gates pass:
-
-1. mark P11A Complete;
-2. mark P11 unblocked;
-3. begin P11 Discover UI/service implementation against these RPCs.
+Begin **P11 — Discover** against the four validated RPCs. Its plan-frozen scope
+is deterministic feed and cursor behavior, pagination, restoration, visibility,
+and qualified impressions. P11 is Ready (unblocked), not Complete. P12 and later
+feature packages remain deferred.
 
 ## 26. Suggested commit message
 
