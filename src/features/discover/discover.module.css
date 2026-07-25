@@ -1,0 +1,295 @@
+.discover {
+  width: min(100%, var(--width-content-max));
+  margin-inline: auto;
+}
+
+.header {
+  display: grid;
+  max-width: 42rem;
+  gap: var(--space-3);
+  margin-block-end: var(--space-8);
+}
+
+.eyebrow,
+.brand {
+  color: var(--color-text-secondary);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.introduction,
+.stateBody {
+  color: var(--color-text-secondary);
+}
+
+.productGrid,
+.skeletonGrid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--space-5) var(--space-2);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.productCard {
+  min-width: 0;
+}
+
+.imageFrame {
+  position: relative;
+  min-height: 10rem;
+  overflow: hidden;
+  border-radius: var(--radius-xs);
+  background: var(--color-surface-subtle);
+}
+
+.productImage {
+  object-fit: cover;
+}
+
+.imageFailure {
+  display: flex;
+  width: 100%;
+  height: 100%;
+  min-height: 10rem;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-3);
+  padding: var(--space-4);
+  background:
+    linear-gradient(
+      135deg,
+      transparent 0 46%,
+      var(--color-border-subtle) 46% 54%,
+      transparent 54% 100%
+    ),
+    var(--color-surface-subtle);
+  color: var(--color-text-secondary);
+  text-align: center;
+}
+
+.saveButton {
+  position: absolute;
+  inset-block-start: var(--space-2);
+  inset-inline-end: var(--space-2);
+  display: grid;
+  width: var(--size-touch-target-min);
+  height: var(--size-touch-target-min);
+  place-items: center;
+  border: var(--border-width-thin) solid
+    color-mix(in srgb, var(--color-border-strong) 72%, transparent);
+  border-radius: var(--radius-pill);
+  background: color-mix(in srgb, var(--color-surface-raised) 92%, transparent);
+  color: var(--color-text-primary);
+  box-shadow: var(--elevation-1);
+  cursor: pointer;
+  transition:
+    transform var(--motion-duration-fast) var(--motion-easing-standard),
+    background-color var(--motion-duration-fast) var(--motion-easing-standard);
+}
+
+.saveButton[aria-pressed='true'] {
+  background: var(--color-surface-inverse);
+  color: var(--color-text-inverse);
+}
+
+.saveButton:active {
+  transform: scale(var(--motion-scale-pressed));
+}
+
+.saveButton:disabled {
+  cursor: wait;
+  opacity: 0.7;
+}
+
+.productLink {
+  display: grid;
+  min-height: 4.5rem;
+  gap: var(--space-1);
+  padding-block: var(--space-3);
+  color: var(--color-text-primary);
+  text-decoration: none;
+}
+
+.productName {
+  display: -webkit-box;
+  overflow: hidden;
+  font-size: var(--font-size-body-sm);
+  font-weight: var(--font-weight-medium);
+  line-height: var(--line-height-body-sm);
+  overflow-wrap: anywhere;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+}
+
+.productMeta {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: var(--space-1) var(--space-2);
+  color: var(--color-text-secondary);
+  font-size: var(--font-size-caption);
+  line-height: var(--line-height-caption);
+  text-transform: capitalize;
+}
+
+.cardError {
+  display: block;
+  color: var(--color-status-error);
+  font-size: var(--font-size-caption);
+}
+
+.skeletonCard {
+  display: grid;
+  gap: var(--space-2);
+}
+
+.skeletonImage,
+.skeletonLine,
+.skeletonLineShort {
+  display: block;
+  border-radius: var(--radius-xs);
+  background: var(--color-surface-subtle);
+  animation: skeleton var(--motion-duration-skeleton)
+    var(--motion-easing-standard) infinite alternate;
+}
+
+.skeletonImage {
+  aspect-ratio: 4 / 5;
+}
+
+.skeletonLine {
+  width: 86%;
+  height: 0.75rem;
+}
+
+.skeletonLineShort {
+  width: 55%;
+  height: 0.625rem;
+}
+
+.stateMessage {
+  display: grid;
+  width: min(100%, 36rem);
+  gap: var(--space-3);
+  margin: var(--space-10) auto;
+  padding: var(--space-8);
+  border: var(--border-width-thin) solid var(--color-border-subtle);
+  border-radius: var(--radius-sm);
+  background: var(--color-surface-subtle);
+}
+
+.stateActions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-3);
+  margin-block-start: var(--space-2);
+}
+
+.secondaryAction {
+  display: inline-flex;
+  min-height: var(--size-touch-target-min);
+  align-items: center;
+  padding: var(--space-2) var(--space-4);
+  border: var(--border-width-thin) solid var(--color-border-strong);
+  border-radius: var(--radius-sm);
+  font-size: var(--font-size-label);
+  font-weight: var(--font-weight-semibold);
+  text-decoration: none;
+}
+
+.paginationBoundary,
+.paginationStatus {
+  display: flex;
+  justify-content: center;
+  padding-block: var(--space-8);
+}
+
+.paginationStatus {
+  display: block;
+}
+
+.undoToast {
+  position: fixed;
+  inset-inline: var(--layout-gutter);
+  inset-block-end: calc(
+    var(--size-navigation-bottom) + var(--safe-area-bottom) + var(--space-4)
+  );
+  z-index: var(--z-index-toast);
+  display: flex;
+  width: fit-content;
+  max-width: calc(100% - (2 * var(--layout-gutter)));
+  min-height: var(--size-touch-target-min);
+  align-items: center;
+  gap: var(--space-4);
+  margin-inline: auto;
+  padding: var(--space-3) var(--space-4);
+  border-radius: var(--radius-sm);
+  background: var(--color-surface-inverse);
+  color: var(--color-text-inverse);
+  box-shadow: var(--elevation-2);
+  font-size: var(--font-size-body-sm);
+}
+
+.undoToast button {
+  min-width: var(--size-touch-target-min);
+  min-height: var(--size-touch-target-min);
+  border: 0;
+  background: transparent;
+  color: inherit;
+  font-weight: var(--font-weight-semibold);
+  text-decoration: underline;
+  cursor: pointer;
+}
+
+@keyframes skeleton {
+  from {
+    opacity: 0.62;
+  }
+
+  to {
+    opacity: 1;
+  }
+}
+
+@media (min-width: 48rem) {
+  .productGrid,
+  .skeletonGrid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: var(--space-8) var(--space-4);
+  }
+}
+
+@media (min-width: 75rem) {
+  .productGrid,
+  .skeletonGrid {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: var(--space-10) var(--space-5);
+  }
+
+  .undoToast {
+    inset-inline-start: calc(
+      var(--size-navigation-rail) + var(--layout-gutter)
+    );
+    inset-inline-end: auto;
+    inset-block-end: var(--space-6);
+  }
+}
+
+@media (min-width: 90rem) {
+  .productGrid,
+  .skeletonGrid {
+    grid-template-columns: repeat(5, minmax(0, 1fr));
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .skeletonImage,
+  .skeletonLine,
+  .skeletonLineShort {
+    animation: none;
+  }
+}
