@@ -68,9 +68,9 @@ select is(
         ('public.save_product(uuid,uuid,text)'),
         ('public.remove_product(uuid,uuid)'),
         ('public.start_challenge(uuid,uuid)'),
-        ('public.select_challenge_item(uuid,text,uuid,uuid)'),
-        ('public.remove_challenge_item(uuid,uuid)'),
-        ('public.complete_challenge(uuid,uuid)'),
+        ('public.select_challenge_item(uuid,text,uuid,bigint,uuid)'),
+        ('public.remove_challenge_item(uuid,bigint,uuid)'),
+        ('public.complete_challenge(uuid,bigint,uuid)'),
         ('public.list_catalog_products(text,text,text,uuid,integer)'),
         ('public.get_catalog_product(uuid)'),
         ('public.list_products_for_challenge_slot(uuid,text,uuid,integer)'),
@@ -117,9 +117,9 @@ select ok(
         ('public.save_product(uuid,uuid,text)'),
         ('public.remove_product(uuid,uuid)'),
         ('public.start_challenge(uuid,uuid)'),
-        ('public.select_challenge_item(uuid,text,uuid,uuid)'),
-        ('public.remove_challenge_item(uuid,uuid)'),
-        ('public.complete_challenge(uuid,uuid)'),
+        ('public.select_challenge_item(uuid,text,uuid,bigint,uuid)'),
+        ('public.remove_challenge_item(uuid,bigint,uuid)'),
+        ('public.complete_challenge(uuid,bigint,uuid)'),
         ('public.list_catalog_products(text,text,text,uuid,integer)'),
         ('public.get_catalog_product(uuid)'),
         ('public.list_products_for_challenge_slot(uuid,text,uuid,integer)'),
@@ -658,6 +658,7 @@ select throws_ok(
       ),
       'not_a_slot',
       '81300000-0000-4000-8000-000000000001',
+      1,
       '82400000-0000-4000-8000-000000000001'
     )
   $$,
@@ -676,6 +677,7 @@ select throws_ok(
       ),
       'shoes',
       '81300000-0000-4000-8000-000000000002',
+      1,
       '82400000-0000-4000-8000-000000000002'
     )
   $$,
@@ -694,6 +696,7 @@ select throws_ok(
       ),
       'shoes',
       '81300000-0000-4000-8000-000000000005',
+      1,
       '82400000-0000-4000-8000-000000000003'
     )
   $$,
@@ -712,6 +715,7 @@ select lives_ok(
       ),
       'top',
       '81300000-0000-4000-8000-000000000001',
+      1,
       '82400000-0000-4000-8000-000000000004'
     )
   $$,
@@ -727,6 +731,7 @@ select is(
     ),
     'top',
     '81300000-0000-4000-8000-000000000001',
+    1,
     '82400000-0000-4000-8000-000000000004'
   ),
   public.select_challenge_item(
@@ -737,6 +742,7 @@ select is(
     ),
     'top',
     '81300000-0000-4000-8000-000000000001',
+    1,
     '82400000-0000-4000-8000-000000000004'
   ),
   'Challenge selection replay is idempotent'
@@ -752,6 +758,7 @@ select lives_ok(
       ),
       'top',
       '81300000-0000-4000-8000-000000000001',
+      2,
       '82400000-0000-4000-8000-000000000012'
     )
   $$,
@@ -777,6 +784,7 @@ select throws_ok(
         from public.challenge_progress
         where challenge_id = '81400000-0000-4000-8000-000000000001'
       ),
+      2,
       '82500000-0000-4000-8000-000000000001'
     )
   $$,
@@ -794,6 +802,7 @@ select lives_ok(
         where slot_id = 'top'
           and removed_at is null
       ),
+      2,
       '82400000-0000-4000-8000-000000000005'
     )
   $$,
@@ -809,6 +818,7 @@ select is(
       order by selected_at desc
       limit 1
     ),
+    2,
     '82400000-0000-4000-8000-000000000005'
   ),
   public.remove_challenge_item(
@@ -819,6 +829,7 @@ select is(
       order by selected_at desc
       limit 1
     ),
+    2,
     '82400000-0000-4000-8000-000000000005'
   ),
   'Challenge removal replay returns the canonical result'
@@ -839,24 +850,44 @@ select lives_ok(
         progress_id,
         'top',
         '81300000-0000-4000-8000-000000000001',
+        (
+          select state_revision
+          from public.challenge_progress
+          where id = progress_id
+        ),
         '82400000-0000-4000-8000-000000000006'
       );
       perform public.select_challenge_item(
         progress_id,
         'bottom',
         '81300000-0000-4000-8000-000000000002',
+        (
+          select state_revision
+          from public.challenge_progress
+          where id = progress_id
+        ),
         '82400000-0000-4000-8000-000000000007'
       );
       perform public.select_challenge_item(
         progress_id,
         'shoes',
         '81300000-0000-4000-8000-000000000003',
+        (
+          select state_revision
+          from public.challenge_progress
+          where id = progress_id
+        ),
         '82400000-0000-4000-8000-000000000008'
       );
       perform public.select_challenge_item(
         progress_id,
         'layer_or_accessory',
         '81300000-0000-4000-8000-000000000004',
+        (
+          select state_revision
+          from public.challenge_progress
+          where id = progress_id
+        ),
         '82400000-0000-4000-8000-000000000009'
       );
     end;
@@ -932,6 +963,11 @@ select lives_ok(
         progress_id,
         'top',
         '81300000-0000-4000-8000-000000000001',
+        (
+          select state_revision
+          from public.challenge_progress
+          where id = progress_id
+        ),
         '82400000-0000-4000-8000-000000000011'
       );
     end;
@@ -950,6 +986,11 @@ select throws_ok(
       ),
       'shoes',
       '81300000-0000-4000-8000-000000000001',
+      (
+        select state_revision
+        from public.challenge_progress
+        where challenge_id = '81400000-0000-4000-8000-000000000001'
+      ),
       '82400000-0000-4000-8000-000000000010'
     )
   $$,
@@ -966,6 +1007,11 @@ select lives_ok(
         from public.challenge_progress
         where challenge_id = '81400000-0000-4000-8000-000000000001'
       ),
+      (
+        select state_revision
+        from public.challenge_progress
+        where challenge_id = '81400000-0000-4000-8000-000000000001'
+      ),
       '82500000-0000-4000-8000-000000000002'
     )
   $$,
@@ -979,6 +1025,7 @@ select is(
       from public.challenge_progress
       where challenge_id = '81400000-0000-4000-8000-000000000001'
     ),
+    9,
     '82500000-0000-4000-8000-000000000002'
   ),
   public.complete_challenge(
@@ -987,6 +1034,7 @@ select is(
       from public.challenge_progress
       where challenge_id = '81400000-0000-4000-8000-000000000001'
     ),
+    9,
     '82500000-0000-4000-8000-000000000002'
   ),
   'Challenge completion replay returns the same immutable completion'
@@ -997,6 +1045,11 @@ select lives_ok(
     select public.complete_challenge(
       (
         select id
+        from public.challenge_progress
+        where challenge_id = '81400000-0000-4000-8000-000000000001'
+      ),
+      (
+        select state_revision
         from public.challenge_progress
         where challenge_id = '81400000-0000-4000-8000-000000000001'
       ),
@@ -1121,6 +1174,7 @@ select throws_ok(
       '81600000-0000-4000-8000-000000000001',
       'top',
       '81300000-0000-4000-8000-000000000001',
+      10,
       '82700000-0000-4000-8000-000000000003'
     )
   $$,
