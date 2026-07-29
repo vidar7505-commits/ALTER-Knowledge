@@ -2,26 +2,70 @@
 
 ## Current package
 
-`P15 — Continuation`
+`P15A — Strict Return-Session Threshold`
 
 ## Status
 
-Ready
+Configured but awaiting CI validation
 
 P10 remains Complete. P11A remains Complete. P11 remains Complete. P12 remains
 Complete. P13 remains Complete after verified GitHub application validation.
 P14A is Complete after verified GitHub Database infrastructure validation. P14
 is Complete after verified GitHub application validation of commit
-`2449c7f4e1aaf2ee31df344697bf8e9af48b4856`. P15 is Ready.
+`2449c7f4e1aaf2ee31df344697bf8e9af48b4856`. P15A is configured locally and
+awaiting GitHub Database infrastructure validation. P15 is blocked pending
+P15A database CI closure. P16 remains blocked.
 
-P14 database changes: None. P14A previously added one forward-only migration
-with optimistic revision preconditions for the three active-state Challenge
-mutation RPCs.
+P15A adds one forward-only migration correcting only the strict 30-minute
+boundary in `public.ensure_session`. P14A previously added one forward-only
+migration with optimistic revision preconditions for the three active-state
+Challenge mutation RPCs.
 Cloud migrations deployed: None.
 Hosted development schema updated: No.
 Remote reset: not run.
 Remote migration push: not run.
 Remote seed push: not run.
+Production deployment: not run.
+
+## P15A implementation
+
+- Replaced the existing exact
+  `public.ensure_session(uuid,text,text,text,text,text)` implementation through
+  one forward-only migration.
+- Changed expiration from `last_activity_at <= observed_at - interval '30
+minutes'` to `<`.
+- Changed latest-session reuse from `last_activity_at > observed_at - interval
+'30 minutes'` to `>=`.
+- Preserved server `statement_timestamp()` authority, `timestamptz` precision,
+  session numbering, result shape, identity locking and isolation, feed
+  integration, postgres ownership, `SECURITY DEFINER`, empty search path, and
+  authenticated-only execution.
+- Added deterministic pgTAP coverage for first-session creation, 29:59,
+  exactly 30 minutes, ±1 microsecond, return-session creation, repeated-call
+  convergence, identity isolation, and feed-instance compatibility.
+- Did not edit the historical P11A migration, application code, telemetry
+  taxonomy, session schema, or RLS policies.
+- `npx.cmd supabase --version`: passed (`2.109.1`) after allowing the CLI to
+  access its user-profile telemetry file.
+- `npm.cmd run format:check`: passed.
+- `npm.cmd run lint`: passed with zero warnings/errors.
+- `npm.cmd run typecheck`: passed.
+- `npm.cmd run test`: passed (30 test files / 147 tests).
+- `npm.cmd run build`: passed after allowing the existing Google font fetch.
+- `git diff --check`: passed with working-copy line-ending warnings only.
+- `npx.cmd supabase db reset --local`: blocked because the Docker Desktop Linux
+  engine pipe `//./pipe/dockerDesktopLinuxEngine` is unavailable.
+- `npx.cmd supabase db lint --local --fail-on warning`: blocked with
+  `LegacyDbConnectError`; local PostgreSQL is unavailable.
+- `npx.cmd supabase test db`: blocked with `LegacyDbConnectError`; local
+  PostgreSQL is unavailable.
+
+Database changes: one forward-only `ensure_session` function replacement.
+New migrations: one.
+Cloud migrations deployed: None.
+Hosted development schema updated: No.
+Remote reset: not run.
+Remote migration push: not run.
 Production deployment: not run.
 
 ## P14 implementation
@@ -129,7 +173,9 @@ deployment, commit, or push was changed.
 
 ## Next action
 
-Begin P15 — Continuation. It depends on P11, P13, and P14; its scope is return
-priority and card behavior, its acceptance boundary is the `>30 min` return
-E2E, and its commit boundary is `feat(continuation)`. Do not add P15
-implementation during P14 closure.
+Run GitHub Database infrastructure validation for P15A. Do not mark P15A
+Complete or unblock P15 until clean reset, strict database lint, all pgTAP
+suites including `011_strict_return_session_threshold.sql`, and application
+gates pass. P15 remains Continuation, depending on P11, P13, and P14, with
+return priority and card scope, `>30 min` return E2E acceptance, and
+`feat(continuation)` commit boundary.
