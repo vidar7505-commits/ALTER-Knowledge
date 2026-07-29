@@ -241,8 +241,10 @@ defect found during inspection was corrected and recertified.
 - `git diff --check`: passed with working-copy line-ending warnings only.
 - No separate accessibility script exists in `package.json`; component axe
   coverage passed through the main test command.
-- Final Node-process inspection returned no processes, so there is no
-  ALTER-related Next.js or Playwright orphan.
+- Five-viewport visual certification passed at 320×700, 390×844, 768×1024,
+  1200×900, and 1440×1024.
+- Process teardown passed. Final process inspection found no orphan
+  ALTER-related Node, Next.js, or Playwright processes.
 
 ## 29. Database status
 
@@ -251,7 +253,8 @@ historical migrations are unchanged.
 
 ## 30. CI status
 
-Configured but awaiting CI validation. P14 is not marked Complete locally.
+GitHub application validation passed for P14 commit
+`2449c7f4e1aaf2ee31df344697bf8e9af48b4856`. P14 is Complete.
 
 ## 31. Cloud status
 
@@ -279,10 +282,10 @@ the already completed P14A hosted database validation.
 
 ## 35. Deferred P15 work
 
-P15 remains blocked until P14 closes. Its confirmed package is Continuation,
-depending on P11, P13, and P14; scope is return priority and card behavior;
-acceptance is the `>30 min` return E2E; commit boundary is
-`feat(continuation)`.
+P15 — Continuation is Ready. It depends on P11, P13, and P14; scope is return
+priority and card behavior; acceptance is the `>30 min` return E2E; commit
+boundary is `feat(continuation)`. No P15 implementation is included in this
+closure.
 
 ## 36. Exact changed-file inventory
 

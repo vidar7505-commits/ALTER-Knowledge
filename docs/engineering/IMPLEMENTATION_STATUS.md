@@ -2,17 +2,17 @@
 
 ## Current package
 
-`P14 — Challenge`
+`P15 — Continuation`
 
 ## Status
 
-Configured but awaiting CI validation
+Ready
 
 P10 remains Complete. P11A remains Complete. P11 remains Complete. P12 remains
 Complete. P13 remains Complete after verified GitHub application validation.
 P14A is Complete after verified GitHub Database infrastructure validation. P14
-is configured locally and awaiting CI validation. P15 remains blocked pending
-P14 closure.
+is Complete after verified GitHub application validation of commit
+`2449c7f4e1aaf2ee31df344697bf8e9af48b4856`. P15 is Ready.
 
 P14 database changes: None. P14A previously added one forward-only migration
 with optimistic revision preconditions for the three active-state Challenge
@@ -97,6 +97,19 @@ Production deployment: not run.
 - `supabase/tests/006_transactional_rpcs.sql`: passed.
 - `supabase/tests/010_challenge_revision_preconditions.sql`: passed.
 - Application validation gates: passed.
+- GitHub application validation for P14 commit
+  `2449c7f4e1aaf2ee31df344697bf8e9af48b4856`: passed.
+- Format: passed.
+- Lint: passed with zero warnings/errors.
+- Typecheck: passed.
+- Vitest: passed (30 files / 147 tests).
+- Production build: passed.
+- Full Playwright in Chromium with one worker: passed (51 tests).
+- Axe accessibility coverage: passed.
+- Visual certification: passed at 320×700, 390×844, 768×1024, 1200×900, and
+  1440×1024.
+- Process teardown: passed; no orphan ALTER-related Node, Next.js, or
+  Playwright processes remained.
 - Challenge revision mismatch behavior for select, remove, and complete: passed.
 - Replay and operation-conflict semantics: passed.
 - Two-user isolation: passed.
@@ -116,7 +129,7 @@ deployment, commit, or push was changed.
 
 ## Next action
 
-Run GitHub application CI for P14. Do not mark P14 Complete until the required
-CI result is verified. P15 — Continuation remains blocked; when unblocked, its
-scope is return priority and continuation card behavior with the `>30 min`
-return E2E acceptance boundary and `feat(continuation)` commit boundary.
+Begin P15 — Continuation. It depends on P11, P13, and P14; its scope is return
+priority and card behavior, its acceptance boundary is the `>30 min` return
+E2E, and its commit boundary is `feat(continuation)`. Do not add P15
+implementation during P14 closure.
