@@ -76,6 +76,13 @@ export async function mockAnonymousIdentity(
     wardrobeQueryDelayMs?: number;
     wardrobeProductQueryError?: boolean;
     unavailableSavedProduct?: boolean;
+    initialChallengeStatus?: 'unstarted' | 'active' | 'completed';
+    initialChallengeSelectionCount?: number;
+    challengeLoadErrorOnce?: boolean;
+    challengeProductErrorOnce?: boolean;
+    challengeRevisionMismatchOnce?: boolean;
+    challengeRevisionMismatchAction?: 'select' | 'remove' | 'complete';
+    challengeOperationConflictOnce?: boolean;
   } = {},
 ) {
   let onboardingStatus =
@@ -97,6 +104,19 @@ export async function mockAnonymousIdentity(
   const savedAtByProduct = new Map<string, string>();
   const savedProductRequests: string[] = [];
   let wardrobeErrorsServed = 0;
+  const challengeId = 'c0810000-0000-4000-8000-000000000001';
+  const challengeProgressId = '60000000-0000-4000-8000-000000000091';
+  const challengeCompletionId = '62000000-0000-4000-8000-000000000091';
+  let challengeStatus = options.initialChallengeStatus ?? 'unstarted';
+  let challengeRevision = challengeStatus === 'unstarted' ? 0 : 1;
+  let challengeLoadFailing = options.challengeLoadErrorOnce ?? false;
+  let challengeProductErrors = options.challengeProductErrorOnce ? 1 : 0;
+  let challengeRevisionErrors = options.challengeRevisionMismatchOnce ? 1 : 0;
+  let challengeConflictErrors = options.challengeOperationConflictOnce ? 1 : 0;
+  const challengeSelections = new Map<
+    string,
+    { id: string; productId: string; selectedAt: string }
+  >();
 
   const productCount = options.productCount ?? 30;
   const discoverProducts = Array.from({ length: productCount }, (_, index) => {
@@ -163,6 +183,28 @@ export async function mockAnonymousIdentity(
       product.product_id,
       `2026-07-24T12:${String(index).padStart(2, '0')}:00.000Z`,
     );
+  }
+  const initialChallengeSelectionCount =
+    challengeStatus === 'completed'
+      ? 4
+      : (options.initialChallengeSelectionCount ?? 0);
+  if (challengeStatus !== 'unstarted') {
+    ['top', 'bottom', 'shoes', 'layer_or_accessory']
+      .slice(0, initialChallengeSelectionCount)
+      .forEach((slotId, index) => {
+        const product = discoverProducts[index];
+        if (product) {
+          challengeSelections.set(slotId, {
+            id: `61000000-0000-4000-8000-${String(index + 1).padStart(12, '0')}`,
+            productId: product.product_id,
+            selectedAt: now,
+          });
+        }
+      });
+    challengeRevision =
+      1 +
+      initialChallengeSelectionCount +
+      (challengeStatus === 'completed' ? 1 : 0);
   }
 
   await page.route('**/api/telemetry', async (route) => {
@@ -404,7 +446,7 @@ export async function mockAnonymousIdentity(
                 materials: ['cotton'],
               },
               slot_eligibility: [
-                product.category === 'accessory'
+                product.category === 'accessory' || product.category === 'layer'
                   ? 'layer_or_accessory'
                   : product.category,
               ],
@@ -416,6 +458,329 @@ export async function mockAnonymousIdentity(
         status: 200,
         contentType: 'application/json',
         body: JSON.stringify(detailProduct ? [detailProduct] : []),
+      });
+      return;
+    }
+
+    if (url.pathname === '/rest/v1/challenges') {
+      if (challengeLoadFailing) {
+        await route.fulfill({
+          status: 503,
+          contentType: 'application/json',
+          body: JSON.stringify({ message: 'deterministic challenge failure' }),
+        });
+        return;
+      }
+      await route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify([
+          {
+            id: challengeId,
+            version: 'challenge-evening-v1',
+            title: 'After Dark',
+            context_copy: 'Build a look for an evening out.',
+            required_slots: [
+              { slot_id: 'top', label: 'Top', display_order: 1 },
+              { slot_id: 'bottom', label: 'Bottom', display_order: 2 },
+              { slot_id: 'shoes', label: 'Shoes', display_order: 3 },
+              {
+                slot_id: 'layer_or_accessory',
+                label: 'Layer or Accessory',
+                display_order: 4,
+              },
+            ],
+            completion_rules: {
+              required_slot_count: 4,
+              unique_products: true,
+              explicit_confirmation: true,
+            },
+            is_active: true,
+          },
+        ]),
+      });
+      return;
+    }
+
+    if (url.pathname === '/rest/v1/challenge_progress') {
+      await route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify(
+          challengeStatus === 'unstarted'
+            ? []
+            : [
+                {
+                  id: challengeProgressId,
+                  challenge_id: challengeId,
+                  status:
+                    challengeStatus === 'completed'
+                      ? 'completed'
+                      : challengeSelections.size === 4
+                        ? 'ready_to_complete'
+                        : 'in_progress',
+                  started_at: now,
+                  state_revision: challengeRevision,
+                },
+              ],
+        ),
+      });
+      return;
+    }
+
+    if (url.pathname === '/rest/v1/challenge_progress_items') {
+      await route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify(
+          [...challengeSelections].map(([slot_id, item]) => ({
+            id: item.id,
+            challenge_progress_id: challengeProgressId,
+            slot_id,
+            product_id: item.productId,
+            selected_at: item.selectedAt,
+          })),
+        ),
+      });
+      return;
+    }
+
+    if (url.pathname === '/rest/v1/challenge_completions') {
+      const snapshotItems = [...challengeSelections].map(([slot_id, item]) => {
+        const product = discoverProducts.find(
+          (candidate) => candidate.product_id === item.productId,
+        )!;
+        return {
+          slot_id,
+          product_id: product.product_id,
+          name: product.name,
+          brand: product.brand,
+          category: product.category,
+          image_urls: product.image_urls,
+        };
+      });
+      await route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify(
+          challengeStatus === 'completed'
+            ? [
+                {
+                  id: challengeCompletionId,
+                  challenge_progress_id: challengeProgressId,
+                  completed_at: now,
+                  selected_products_snapshot: { items: snapshotItems },
+                },
+              ]
+            : [],
+        ),
+      });
+      return;
+    }
+
+    if (url.pathname === '/rest/v1/rpc/list_products_for_challenge_slot') {
+      if (challengeProductErrors > 0) {
+        challengeProductErrors -= 1;
+        await route.fulfill({
+          status: 503,
+          contentType: 'application/json',
+          body: JSON.stringify({ message: 'deterministic picker failure' }),
+        });
+        return;
+      }
+      const body = (route.request().postDataJSON() ?? {}) as {
+        p_slot_id: string;
+      };
+      const rows = discoverProducts
+        .filter((product) => {
+          const eligibility =
+            product.category === 'accessory' || product.category === 'layer'
+              ? 'layer_or_accessory'
+              : product.category;
+          return eligibility === body.p_slot_id;
+        })
+        .map((product) => ({
+          id: product.product_id,
+          name: product.name,
+          brand: product.brand,
+          category: product.category,
+          subcategory: product.subcategory,
+          description: `Curated catalog fixture ${product.position}.`,
+          image_urls: product.image_urls,
+          image_metadata: product.image_metadata,
+          price_amount: product.price_amount,
+          price_currency: product.price_currency,
+          attributes: {
+            style_tags: ['minimal'],
+            color: 'ink',
+            season: ['all season'],
+            fit: 'regular',
+            occasion_tags: ['going_out'],
+            materials: ['cotton'],
+          },
+          slot_eligibility: [body.p_slot_id],
+          is_active: true,
+          catalog_version: product.catalog_version,
+        }));
+      await route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify(rows),
+      });
+      return;
+    }
+
+    if (url.pathname === '/rest/v1/rpc/start_challenge') {
+      const body = (route.request().postDataJSON() ?? {}) as {
+        p_operation_id: string;
+      };
+      if (challengeStatus === 'unstarted') {
+        challengeStatus = 'active';
+        challengeRevision = 1;
+      }
+      await route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify({
+          ok: true,
+          operation_id: body.p_operation_id,
+          state_revision: challengeRevision,
+          data: {
+            challenge_progress_id: challengeProgressId,
+            status:
+              challengeStatus === 'completed' ? 'completed' : 'in_progress',
+          },
+        }),
+      });
+      return;
+    }
+
+    if (
+      url.pathname === '/rest/v1/rpc/select_challenge_item' ||
+      url.pathname === '/rest/v1/rpc/remove_challenge_item' ||
+      url.pathname === '/rest/v1/rpc/complete_challenge'
+    ) {
+      const body = (route.request().postDataJSON() ?? {}) as Record<
+        string,
+        string | number
+      >;
+      const mutationAction = url.pathname.endsWith('select_challenge_item')
+        ? 'select'
+        : url.pathname.endsWith('remove_challenge_item')
+          ? 'remove'
+          : 'complete';
+      if (
+        challengeRevisionErrors > 0 &&
+        (!options.challengeRevisionMismatchAction ||
+          options.challengeRevisionMismatchAction === mutationAction)
+      ) {
+        challengeRevisionErrors -= 1;
+        challengeRevision += 1;
+        await route.fulfill({
+          status: 409,
+          contentType: 'application/json',
+          body: JSON.stringify({
+            code: '40001',
+            message: 'challenge_revision_mismatch',
+          }),
+        });
+        return;
+      }
+      if (challengeConflictErrors > 0) {
+        challengeConflictErrors -= 1;
+        await route.fulfill({
+          status: 400,
+          contentType: 'application/json',
+          body: JSON.stringify({
+            code: '22023',
+            message: 'operation_id reused with a different fingerprint',
+          }),
+        });
+        return;
+      }
+      if (body.expected_state_revision !== challengeRevision) {
+        await route.fulfill({
+          status: 409,
+          contentType: 'application/json',
+          body: JSON.stringify({
+            code: '40001',
+            message: 'challenge_revision_mismatch',
+          }),
+        });
+        return;
+      }
+      if (url.pathname.endsWith('select_challenge_item')) {
+        const slotId = String(body.slot_id);
+        const productId = String(body.product_id);
+        const prior = challengeSelections.get(slotId);
+        const id =
+          prior?.id ??
+          `61000000-0000-4000-8000-${String(challengeSelections.size + 1).padStart(12, '0')}`;
+        challengeSelections.set(slotId, {
+          id,
+          productId,
+          selectedAt: now,
+        });
+        challengeRevision += prior?.productId === productId ? 0 : 1;
+        await route.fulfill({
+          status: 200,
+          contentType: 'application/json',
+          body: JSON.stringify({
+            ok: true,
+            operation_id: body.operation_id,
+            state_revision: challengeRevision,
+            data: {
+              challenge_progress_item_id: id,
+              slot_id: slotId,
+              product_id: productId,
+              status:
+                challengeSelections.size === 4
+                  ? 'ready_to_complete'
+                  : 'in_progress',
+            },
+          }),
+        });
+        return;
+      }
+      if (url.pathname.endsWith('remove_challenge_item')) {
+        const selected = [...challengeSelections].find(
+          ([, item]) => item.id === String(body.challenge_progress_item_id),
+        );
+        if (selected) challengeSelections.delete(selected[0]);
+        challengeRevision += 1;
+        await route.fulfill({
+          status: 200,
+          contentType: 'application/json',
+          body: JSON.stringify({
+            ok: true,
+            operation_id: body.operation_id,
+            state_revision: challengeRevision,
+            data: {
+              challenge_progress_item_id: body.challenge_progress_item_id,
+              slot_id: selected?.[0] ?? 'top',
+              product_id:
+                selected?.[1].productId ?? discoverProducts[0]!.product_id,
+              removed_at: now,
+              status: 'in_progress',
+            },
+          }),
+        });
+        return;
+      }
+      challengeStatus = 'completed';
+      challengeRevision += 1;
+      await route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify({
+          ok: true,
+          operation_id: body.operation_id,
+          state_revision: challengeRevision,
+          data: {
+            challenge_completion_id: challengeCompletionId,
+            completed_at: now,
+          },
+        }),
       });
       return;
     }
@@ -655,6 +1020,9 @@ export async function mockAnonymousIdentity(
     },
     resolveWardrobeProductQueryError: () => {
       wardrobeProductQueryFailing = false;
+    },
+    resolveChallengeLoadError: () => {
+      challengeLoadFailing = false;
     },
     feedInstanceId,
     nextCursor,

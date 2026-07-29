@@ -2,24 +2,55 @@
 
 ## Current package
 
-`P14A — Challenge Revision Preconditions`
+`P14 — Challenge`
 
 ## Status
 
-Complete
+Configured but awaiting CI validation
 
 P10 remains Complete. P11A remains Complete. P11 remains Complete. P12 remains
 Complete. P13 remains Complete after verified GitHub application validation.
 P14A is Complete after verified GitHub Database infrastructure validation. P14
-is Ready. P15 remains blocked.
+is configured locally and awaiting CI validation. P15 remains blocked pending
+P14 closure.
 
-Database changes: one forward-only P14A migration adds optimistic revision
-preconditions to the three active-state Challenge mutation RPCs.
+P14 database changes: None. P14A previously added one forward-only migration
+with optimistic revision preconditions for the three active-state Challenge
+mutation RPCs.
 Cloud migrations deployed: None.
 Hosted development schema updated: No.
 Remote reset: not run.
 Remote migration push: not run.
 Remote seed push: not run.
+Production deployment: not run.
+
+## P14 implementation
+
+- Replaced only the `/challenge` placeholder inside the existing P09 shell.
+- Added canonical Challenge definition, progress, selection, completion, and
+  mutation-envelope validation.
+- Added owner-scoped recovery reads and the approved start, select, remove,
+  complete, and slot-product RPC calls.
+- Sends the current `state_revision` for every active-state mutation and maps
+  SQLSTATE `40001` / `challenge_revision_mismatch` to canonical refetch rather
+  than stale replay.
+- Preserves stable operation IDs for logical retry, distinguishes operation
+  conflict, rejects stale responses, and guards duplicate input immediately.
+- Renders the four required slots in canonical order and locks every mutation
+  control after completion.
+- Uses immutable completion snapshots when current catalog availability changes.
+- Integrates Product Detail only through `from=challenge`.
+- Uses only P07 registered Challenge events and keeps telemetry failure outside
+  canonical Challenge state.
+- Added deterministic unit/component, axe, dedicated one-worker E2E, mock, and
+  five-viewport visual coverage.
+
+Database changes: None.
+New migrations: None.
+Cloud migrations deployed: None.
+Hosted development schema updated: No.
+Remote reset: not run.
+Remote migration push: not run.
 Production deployment: not run.
 
 ## P14A implementation
@@ -85,7 +116,7 @@ deployment, commit, or push was changed.
 
 ## Next action
 
-P14 — Challenge is Ready. Its dependencies are P06, P08, P13, and P14A; its
-scope is start, select, remove, and complete; its acceptance boundary is
-idempotency, immutability, and mismatch; and its commit boundary is
-`feat(challenge)`. P15 remains blocked.
+Run GitHub application CI for P14. Do not mark P14 Complete until the required
+CI result is verified. P15 — Continuation remains blocked; when unblocked, its
+scope is return priority and continuation card behavior with the `>30 min`
+return E2E acceptance boundary and `feat(continuation)` commit boundary.
