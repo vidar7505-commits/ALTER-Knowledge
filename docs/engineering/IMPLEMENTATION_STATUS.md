@@ -2,11 +2,11 @@
 
 ## Current package
 
-`P15C — Meaningful Destination Boundary`
+`P15 — Continuation`
 
 ## Status
 
-Configured but awaiting CI validation
+Ready
 
 P10 remains Complete. P11A remains Complete. P11 remains Complete. P12 remains
 Complete. P13 remains Complete after verified GitHub application validation.
@@ -14,9 +14,11 @@ P14A is Complete after verified GitHub Database infrastructure validation. P14
 is Complete after verified GitHub application validation of commit
 `2449c7f4e1aaf2ee31df344697bf8e9af48b4856`. P15A is Complete after verified
 GitHub Database infrastructure validation. P15B is Complete at commit
-`11bed0f78638f4ed246fdf07d6792dcb744566ed`. P15C is Configured but awaiting CI
-validation. P15 remains blocked pending P15C Database CI closure. P16 remains
-blocked pending P15 closure.
+`11bed0f78638f4ed246fdf07d6792dcb744566ed`. P15C is Complete after verified
+GitHub Database infrastructure validation of implementation commit
+`4bee1b5618d798930b6b8665cbb2c45839befe5c` and test-fixture correction commit
+`38494158aba0584d1a5816b3d8c17028d09319d8`. P15 is Ready. P16 remains blocked
+pending P15 closure.
 
 P15A adds one forward-only migration correcting only the strict 30-minute
 boundary in `public.ensure_session`. P14A previously added one forward-only
@@ -59,7 +61,7 @@ Production deployment: not run.
 - Preserves direct browser UPDATE denial, RLS, session numbering, P11 feed
   ownership, telemetry taxonomy, and all historical migrations.
 - Added
-  `supabase/tests/012_meaningful_destination_boundary.sql` with 44 deterministic
+  `supabase/tests/012_meaningful_destination_boundary.sql` with 53 deterministic
   pgTAP assertions covering structure, grants, allowlist, active-session
   precision, state mutation, replay/conflict, identity isolation, return-session
   integration, and feed regression.
@@ -68,6 +70,26 @@ Production deployment: not run.
 - No column CHECK constraint was added because a forward-only migration cannot
   prove that every previously deployed historical value complies; the RPC is
   the exclusive application write boundary and enforces the frozen allowlist.
+- The finalized fixture expires only the latest identity-scoped session,
+  derives the next number from that identity's current maximum, and uses
+  distinct user A/user B session UUID namespaces.
+- Both identity lineages begin at 1 and remain contiguous; neither identity's
+  return advances the other, and no session ID belongs to multiple identities.
+- Destination recording creates no additional session, does not renumber
+  sessions, preserves feed state, and keeps operation-ledger ownership
+  identity-isolated.
+- Implementation commit:
+  `4bee1b5618d798930b6b8665cbb2c45839befe5c`.
+- Test-fixture correction commit:
+  `38494158aba0584d1a5816b3d8c17028d09319d8`.
+- GitHub Database infrastructure validation: passed.
+- Clean database reset: passed.
+- Strict database lint: passed.
+- All pgTAP suites: passed.
+- `supabase/tests/006_transactional_rpcs.sql`: passed.
+- `supabase/tests/012_meaningful_destination_boundary.sql`: passed with 53
+  assertions.
+- Application format, lint, typecheck, Vitest, and production build: passed.
 
 Database changes: one forward-only function migration.
 New migrations: one.
@@ -262,7 +284,7 @@ deployment, commit, or push was changed.
 
 ## Next action
 
-Run GitHub Database infrastructure validation for P15C. P15C remains Configured
-but awaiting CI validation until clean reset, strict lint, all pgTAP suites, and
-application gates pass. P15 remains blocked pending P15C Database CI closure.
-P16 remains blocked pending P15 closure.
+Begin P15 — Continuation. Its effective dependencies are P11, P13, P14, P15A,
+P15B, and P15C; scope is return priority and the continuation card; acceptance
+is a strictly greater-than-30-minute return E2E; and its commit boundary is
+`feat(continuation)`. P16 remains blocked pending P15 closure.

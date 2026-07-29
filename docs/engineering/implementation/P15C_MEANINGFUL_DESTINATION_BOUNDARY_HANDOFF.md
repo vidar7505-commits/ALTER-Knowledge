@@ -4,9 +4,11 @@
 
 WP-006 / P15C — Meaningful Destination Boundary.
 
-Status: **Configured but awaiting CI validation**.
+Status: **Complete**.
 
-P15 remains blocked pending P15C Database CI closure. P16 remains blocked
+GitHub Database infrastructure validation passed for implementation commit
+`4bee1b5618d798930b6b8665cbb2c45839befe5c` and test-fixture correction commit
+`38494158aba0584d1a5816b3d8c17028d09319d8`. P15 is Ready. P16 remains blocked
 pending P15 closure.
 
 ## 2. Preflight
@@ -17,8 +19,9 @@ pending P15 closure.
 - Branch: `main`.
 - Initial working tree: clean.
 - `origin/main` fetched successfully.
-- Local `main` and `origin/main`:
-  `6c7ee74150e578ac0c02e2bec00e832df81d7d56`.
+- Closure working tree before documentation changes: clean.
+- Closure local `main` and `origin/main`:
+  `38494158aba0584d1a5816b3d8c17028d09319d8`.
 - P15A: Complete.
 - P15B: Complete.
 - P15C: Ready before implementation.
@@ -284,7 +287,7 @@ rows.
 
 ## 23. pgTAP inventory
 
-`supabase/tests/012_meaningful_destination_boundary.sql` contains 44
+`supabase/tests/012_meaningful_destination_boundary.sql` contains 53
 deterministic assertions covering:
 
 - exact signature, return type, owner, volatility, security, search path,
@@ -309,6 +312,19 @@ Fixtures use two deterministic anonymous Auth identities, explicit UUIDs,
 statement-time-relative intervals, and helper functions whose updates and calls
 share one statement timestamp. No sleep or real-time wait is used.
 
+The finalized fixture additionally proves:
+
+- only the latest identity-scoped session is expired for return creation;
+- the next session number is derived from the current identity-scoped maximum;
+- user A and user B use distinct session UUID namespaces;
+- both lineages begin at 1 and remain contiguous;
+- neither identity's return advances the other identity's lineage;
+- no session ID belongs to multiple identities;
+- destination recording creates no additional session and does not renumber
+  the accepted session;
+- feed state remains unchanged;
+- operation-ledger ownership remains identity-isolated.
+
 ## 24. Existing-test changes
 
 Only the exact public RPC allow-list assertions in
@@ -321,24 +337,32 @@ Only the exact public RPC allow-list assertions in
 
 No historical behavioral assertion was weakened or removed.
 
+After the first Database CI run, only
+`supabase/tests/012_meaningful_destination_boundary.sql` changed. The correction
+expired the actual latest owned session and replaced contaminated hardcoded
+lineage expectations with deterministic identity-scoped derivation. The P15C
+migration remained unchanged.
+
 ## 25. Validation results
 
-| Command                                              | Outcome                                                                                                                                                          |
-| ---------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `npx.cmd supabase --version`                         | Passed: `2.109.1` after allowing access to the CLI's user-profile telemetry file.                                                                                |
-| `npm.cmd run format:check`                           | Passed.                                                                                                                                                          |
-| `npm.cmd run lint`                                   | Passed with no warning/error output.                                                                                                                             |
-| `npm.cmd run typecheck`                              | Passed.                                                                                                                                                          |
-| `npm.cmd run test`                                   | Passed: 30 files / 147 tests. Vitest emitted the existing jsdom canvas implementation notice.                                                                    |
-| `npm.cmd run build`                                  | Passed; the sandboxed attempt could not fetch the existing Google fonts, then the unchanged command passed with font-network access and generated all 10 routes. |
-| `git diff --check`                                   | Passed with working-copy LF-to-CRLF warnings only.                                                                                                               |
-| `npx.cmd supabase db reset --local`                  | Blocked: Docker Desktop Linux-engine pipe `//./pipe/dockerDesktopLinuxEngine` was not found.                                                                     |
-| `npx.cmd supabase db lint --local --fail-on warning` | Blocked with `LegacyDbConnectError`; local PostgreSQL was unavailable.                                                                                           |
-| `npx.cmd supabase test db`                           | Blocked with `LegacyDbConnectError`; local PostgreSQL was unavailable.                                                                                           |
+| Command                                                  | Outcome                                                                                                                                                          |
+| -------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `npx.cmd supabase --version`                             | Passed: `2.109.1` after allowing access to the CLI's user-profile telemetry file.                                                                                |
+| `npm.cmd run format:check`                               | Passed.                                                                                                                                                          |
+| `npm.cmd run lint`                                       | Passed with no warning/error output.                                                                                                                             |
+| `npm.cmd run typecheck`                                  | Passed.                                                                                                                                                          |
+| `npm.cmd run test`                                       | Passed: 30 files / 147 tests. Vitest emitted the existing jsdom canvas implementation notice.                                                                    |
+| `npm.cmd run build`                                      | Passed; the sandboxed attempt could not fetch the existing Google fonts, then the unchanged command passed with font-network access and generated all 10 routes. |
+| `git diff --check`                                       | Passed with working-copy LF-to-CRLF warnings only.                                                                                                               |
+| `npx.cmd supabase db reset --local`                      | Blocked: Docker Desktop Linux-engine pipe `//./pipe/dockerDesktopLinuxEngine` was not found.                                                                     |
+| `npx.cmd supabase db lint --local --fail-on warning`     | Blocked with `LegacyDbConnectError`; local PostgreSQL was unavailable.                                                                                           |
+| `npx.cmd supabase test db`                               | Blocked with `LegacyDbConnectError`; local PostgreSQL was unavailable.                                                                                           |
+| GitHub Database infrastructure validation                | Passed: clean reset, strict lint, all pgTAP suites, and application gates.                                                                                       |
+| `supabase/tests/006_transactional_rpcs.sql`              | Passed in authoritative GitHub Database CI.                                                                                                                      |
+| `supabase/tests/012_meaningful_destination_boundary.sql` | Passed with 53 assertions in authoritative GitHub Database CI.                                                                                                   |
 
-No database pass is claimed from the blocked local commands. The 44-assertion
-suite remains checked in for authoritative GitHub Database infrastructure
-validation.
+No database pass is claimed from the blocked local commands. Authoritative
+GitHub Database infrastructure validation closed that local runtime gap.
 
 ## 26. Local Supabase runtime status
 
@@ -350,9 +374,12 @@ was weakened.
 
 ## 27. GitHub CI status
 
-Not run for the uncommitted P15C changes. GitHub Database infrastructure
-validation remains required and authoritative before P15C can be marked
-Complete.
+Passed. Clean database reset, strict database lint, all pgTAP suites,
+`006_transactional_rpcs.sql`, the 53-assertion
+`012_meaningful_destination_boundary.sql` suite, and application format, lint,
+typecheck, Vitest, and production build passed.
+
+P15C is Complete.
 
 ## 28. Cloud status
 
@@ -361,6 +388,7 @@ Complete.
 - Remote reset: not run.
 - Remote migration push: not run.
 - Production deployment: not run.
+- Project linking: not run.
 
 ## 29. Security review
 
@@ -394,9 +422,8 @@ Not implemented:
 
 ## 31. Known limitations
 
-- The workstation-local database runtime may remain unavailable; GitHub
-  Database infrastructure validation is required for authoritative clean-reset,
-  strict-lint, and pgTAP evidence.
+- The workstation-local database runtime remains unavailable; authoritative
+  GitHub validation passed and closes this local execution gap.
 - No persistent column CHECK is added for upgrade safety; all approved
   application writes must use the RPC.
 - P15 must implement the qualified-view call timing and typed application error
@@ -417,10 +444,11 @@ Modified:
 
 ## 33. Recommended next action
 
-Run GitHub Database infrastructure validation. Keep P15C Configured but awaiting
-CI validation until clean reset, strict lint, all pgTAP suites, and application
-gates pass. Only then close P15C and unblock P15.
+Begin P15 — Continuation. Its effective dependencies are P11, P13, P14, P15A,
+P15B, and P15C; scope is return priority and the continuation card; acceptance
+is a strictly greater-than-30-minute return E2E; and its commit boundary is
+`feat(continuation)`. P16 remains blocked pending P15 closure.
 
 ## 34. Suggested commit message
 
-`feat(db): add meaningful destination boundary`
+`docs(implementation): close P15C and ready P15`
