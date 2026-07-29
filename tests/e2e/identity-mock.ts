@@ -70,7 +70,12 @@ export async function mockAnonymousIdentity(
     mutationErrorOnce?: boolean;
     multipleProductImages?: boolean;
     initialSavedProduct?: boolean;
+    initialSavedProductCount?: number;
     partialProductMetadata?: boolean;
+    wardrobeQueryErrorOnce?: boolean;
+    wardrobeQueryDelayMs?: number;
+    wardrobeProductQueryError?: boolean;
+    unavailableSavedProduct?: boolean;
   } = {},
 ) {
   let onboardingStatus =
@@ -84,9 +89,14 @@ export async function mockAnonymousIdentity(
   let paginationErrorRemaining = options.paginationErrorOnce ? 1 : 0;
   let productDetailErrorRemaining = options.productDetailErrorOnce ? 1 : 0;
   let mutationErrorRemaining = options.mutationErrorOnce ? 1 : 0;
+  let wardrobeQueryFailing = options.wardrobeQueryErrorOnce ?? false;
+  let wardrobeProductQueryFailing = options.wardrobeProductQueryError ?? false;
   const appendCursors: Array<string | null> = [];
   const telemetryEvents: Array<Record<string, unknown>> = [];
   const savedProducts = new Map<string, string>();
+  const savedAtByProduct = new Map<string, string>();
+  const savedProductRequests: string[] = [];
+  let wardrobeErrorsServed = 0;
 
   const productCount = options.productCount ?? 30;
   const discoverProducts = Array.from({ length: productCount }, (_, index) => {
@@ -140,10 +150,18 @@ export async function mockAnonymousIdentity(
       catalog_version: 'lr001-catalog-v1',
     };
   });
-  if (options.initialSavedProduct && discoverProducts[0]) {
+  const initialSavedCount =
+    options.initialSavedProductCount ?? (options.initialSavedProduct ? 1 : 0);
+  for (let index = 0; index < initialSavedCount; index += 1) {
+    const product = discoverProducts[index];
+    if (!product) break;
     savedProducts.set(
-      discoverProducts[0].product_id,
-      '70000000-0000-4000-8000-000000000001',
+      product.product_id,
+      `70000000-0000-4000-8000-${String(index + 1).padStart(12, '0')}`,
+    );
+    savedAtByProduct.set(
+      product.product_id,
+      `2026-07-24T12:${String(index).padStart(2, '0')}:00.000Z`,
     );
   }
 
@@ -331,6 +349,14 @@ export async function mockAnonymousIdentity(
     }
 
     if (url.pathname === '/rest/v1/rpc/get_catalog_product') {
+      if (wardrobeProductQueryFailing) {
+        await route.fulfill({
+          status: 503,
+          contentType: 'application/json',
+          body: JSON.stringify({ message: 'private wardrobe product failure' }),
+        });
+        return;
+      }
       if (productDetailErrorRemaining > 0) {
         productDetailErrorRemaining -= 1;
         await route.fulfill({
@@ -345,43 +371,47 @@ export async function mockAnonymousIdentity(
       };
       const productId = body.p_product_id;
       const product = discoverProducts.find((p) => p.product_id === productId);
-      const detailProduct = product
-        ? {
-            id: product.product_id,
-            name: product.name,
-            brand: product.brand,
-            category: product.category,
-            subcategory: options.partialProductMetadata
-              ? null
-              : product.subcategory,
-            description: options.partialProductMetadata
-              ? null
-              : `Curated catalog fixture ${product.position}.`,
-            image_urls: product.image_urls,
-            image_metadata: product.image_metadata,
-            price_amount: options.partialProductMetadata
-              ? null
-              : product.price_amount,
-            price_currency: options.partialProductMetadata
-              ? null
-              : product.price_currency,
-            attributes: {
-              style_tags: ['minimal'],
-              color: 'ink',
-              season: ['all season'],
-              fit: 'regular',
-              occasion_tags: ['going_out'],
-              materials: ['cotton'],
-            },
-            slot_eligibility: [
-              product.category === 'accessory'
-                ? 'layer_or_accessory'
-                : product.category,
-            ],
-            is_active: true,
-            catalog_version: product.catalog_version,
-          }
-        : null;
+      const unavailable =
+        options.unavailableSavedProduct &&
+        productId === discoverProducts[0]?.product_id;
+      const detailProduct =
+        product && !unavailable
+          ? {
+              id: product.product_id,
+              name: product.name,
+              brand: product.brand,
+              category: product.category,
+              subcategory: options.partialProductMetadata
+                ? null
+                : product.subcategory,
+              description: options.partialProductMetadata
+                ? null
+                : `Curated catalog fixture ${product.position}.`,
+              image_urls: product.image_urls,
+              image_metadata: product.image_metadata,
+              price_amount: options.partialProductMetadata
+                ? null
+                : product.price_amount,
+              price_currency: options.partialProductMetadata
+                ? null
+                : product.price_currency,
+              attributes: {
+                style_tags: ['minimal'],
+                color: 'ink',
+                season: ['all season'],
+                fit: 'regular',
+                occasion_tags: ['going_out'],
+                materials: ['cotton'],
+              },
+              slot_eligibility: [
+                product.category === 'accessory'
+                  ? 'layer_or_accessory'
+                  : product.category,
+              ],
+              is_active: true,
+              catalog_version: product.catalog_version,
+            }
+          : null;
       await route.fulfill({
         status: 200,
         contentType: 'application/json',
@@ -409,11 +439,42 @@ export async function mockAnonymousIdentity(
     }
 
     if (url.pathname === '/rest/v1/saved_products') {
+      savedProductRequests.push(url.search);
+      const requestsSavedAt = url.searchParams
+        .get('select')
+        ?.includes('saved_at');
+      if (requestsSavedAt && options.wardrobeQueryDelayMs) {
+        await new Promise((resolve) =>
+          setTimeout(resolve, options.wardrobeQueryDelayMs),
+        );
+      }
+      if (wardrobeQueryFailing) {
+        wardrobeErrorsServed += 1;
+        await route.fulfill({
+          status: 503,
+          contentType: 'application/json',
+          body: JSON.stringify({ message: 'private wardrobe query failure' }),
+        });
+        return;
+      }
+      const rows = [...savedProducts]
+        .map(([product_id, id]) => ({
+          id,
+          product_id,
+          saved_at: savedAtByProduct.get(product_id) ?? now,
+        }))
+        .sort(
+          (left, right) =>
+            right.saved_at.localeCompare(left.saved_at) ||
+            right.id.localeCompare(left.id),
+        );
       await route.fulfill({
         status: 200,
         contentType: 'application/json',
         body: JSON.stringify(
-          [...savedProducts].map(([product_id, id]) => ({ id, product_id })),
+          requestsSavedAt
+            ? rows
+            : rows.map(({ id, product_id }) => ({ id, product_id })),
         ),
       });
       return;
@@ -437,6 +498,7 @@ export async function mockAnonymousIdentity(
         savedProducts.get(body.p_product_id) ??
         `70000000-0000-4000-8000-${String(savedProducts.size + 1).padStart(12, '0')}`;
       savedProducts.set(body.p_product_id, savedProductId);
+      savedAtByProduct.set(body.p_product_id, now);
       await route.fulfill({
         status: 200,
         contentType: 'application/json',
@@ -470,7 +532,10 @@ export async function mockAnonymousIdentity(
       const product = [...savedProducts].find(
         ([, id]) => id === body.saved_product_id,
       );
-      if (product) savedProducts.delete(product[0]);
+      if (product) {
+        savedProducts.delete(product[0]);
+        savedAtByProduct.delete(product[0]);
+      }
       await route.fulfill({
         status: 200,
         contentType: 'application/json',
@@ -583,6 +648,14 @@ export async function mockAnonymousIdentity(
     getAppendCursors: () => [...appendCursors],
     getTelemetryEvents: () => [...telemetryEvents],
     getQualifiedDepth: () => qualifiedDepth,
+    getSavedProductRequests: () => [...savedProductRequests],
+    getWardrobeErrorsServed: () => wardrobeErrorsServed,
+    resolveWardrobeQueryError: () => {
+      wardrobeQueryFailing = false;
+    },
+    resolveWardrobeProductQueryError: () => {
+      wardrobeProductQueryFailing = false;
+    },
     feedInstanceId,
     nextCursor,
   };
