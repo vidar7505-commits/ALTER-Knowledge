@@ -2,19 +2,19 @@
 
 ## Current package
 
-`P15A — Strict Return-Session Threshold`
+`P15 — Continuation`
 
 ## Status
 
-Configured but awaiting CI validation
+Ready
 
 P10 remains Complete. P11A remains Complete. P11 remains Complete. P12 remains
 Complete. P13 remains Complete after verified GitHub application validation.
 P14A is Complete after verified GitHub Database infrastructure validation. P14
 is Complete after verified GitHub application validation of commit
-`2449c7f4e1aaf2ee31df344697bf8e9af48b4856`. P15A is configured locally and
-awaiting GitHub Database infrastructure validation. P15 is blocked pending
-P15A database CI closure. P16 remains blocked.
+`2449c7f4e1aaf2ee31df344697bf8e9af48b4856`. P15A is Complete after verified
+GitHub Database infrastructure validation. P15 is Ready. P16 remains blocked
+pending P15 closure.
 
 P15A adds one forward-only migration correcting only the strict 30-minute
 boundary in `public.ensure_session`. P14A previously added one forward-only
@@ -45,6 +45,22 @@ minutes'` to `<`.
   convergence, identity isolation, and feed-instance compatibility.
 - Did not edit the historical P11A migration, application code, telemetry
   taxonomy, session schema, or RLS policies.
+- Migration:
+  `20260729000200_strict_return_session_threshold.sql`.
+- GitHub Database infrastructure validation: passed.
+- Clean database reset: passed.
+- Strict database lint: passed.
+- All pgTAP suites: passed.
+- `supabase/tests/011_strict_return_session_threshold.sql`: passed with 27
+  assertions.
+- 29:59 remained the same session.
+- Exactly 30:00 remained the same session.
+- 30:00 plus one microsecond created a new return session.
+- User B could not reuse user A's session and created an independent
+  session-number lineage.
+- User A's session lineage remained unchanged.
+- Discover session/feed integration remained valid.
+- Application validation gates: passed.
 - `npx.cmd supabase --version`: passed (`2.109.1`) after allowing the CLI to
   access its user-profile telemetry file.
 - `npm.cmd run format:check`: passed.
@@ -173,9 +189,8 @@ deployment, commit, or push was changed.
 
 ## Next action
 
-Run GitHub Database infrastructure validation for P15A. Do not mark P15A
-Complete or unblock P15 until clean reset, strict database lint, all pgTAP
-suites including `011_strict_return_session_threshold.sql`, and application
-gates pass. P15 remains Continuation, depending on P11, P13, and P14, with
-return priority and card scope, `>30 min` return E2E acceptance, and
-`feat(continuation)` commit boundary.
+Begin P15 — Continuation. It depends on P11, P13, P14, and the completed P15A
+corrective boundary; its scope is return priority and the continuation card,
+its acceptance boundary is a strictly greater-than-30-minute return E2E, and
+its commit boundary is `feat(continuation)`. P16 remains blocked pending P15
+closure.

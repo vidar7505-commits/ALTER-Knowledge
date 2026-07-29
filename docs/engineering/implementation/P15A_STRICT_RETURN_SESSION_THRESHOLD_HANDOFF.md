@@ -151,8 +151,12 @@ wait is used.
 
 ## 18. Existing-test changes
 
-None. Existing session, Discover, telemetry, RLS, and transactional RPC suites
-remain unchanged.
+The dedicated test 011 identity-isolation fixture was corrected so user B's
+authenticated claims are active before the foreign-session assertion. The
+suite explicitly proves `auth.uid()` is user B, rejects reuse of user A's
+session, creates user B's independent session-number lineage, and leaves user
+A's lineage unchanged. Existing session, Discover, telemetry, RLS, and
+transactional RPC suites remain unchanged.
 
 ## 19. Validation outcomes
 
@@ -171,9 +175,22 @@ remain unchanged.
   `LegacyDbConnectError`; local PostgreSQL is unavailable.
 - `npx.cmd supabase test db`: blocked with `LegacyDbConnectError`; local
   PostgreSQL is unavailable.
+- GitHub Database infrastructure validation: passed.
+- Clean database reset: passed.
+- Strict database lint: passed.
+- All pgTAP suites: passed.
+- `supabase/tests/011_strict_return_session_threshold.sql`: passed with 27
+  assertions.
+- Boundary certification passed: 29:59 and exactly 30:00 reused the same
+  session; 30:00 plus one microsecond created a new return session.
+- Identity isolation passed: user B could not reuse user A's session, user B
+  created an independent session-number lineage, and user A's lineage remained
+  unchanged.
+- Discover session/feed compatibility: passed.
+- Application validation gates: passed.
 
-GitHub Database infrastructure validation remains authoritative for database
-closure. No local database test is claimed as passed.
+The authoritative GitHub database workflow closed the local runtime gap. No
+local database test is retroactively claimed as passed.
 
 ## 20. Local Supabase runtime status
 
@@ -185,8 +202,7 @@ authoritative GitHub execution.
 
 ## 21. GitHub CI status
 
-Configured but awaiting GitHub Database infrastructure validation. P15A is not
-Complete locally.
+GitHub Database infrastructure validation passed. P15A is Complete.
 
 ## 22. Cloud status
 
@@ -211,9 +227,9 @@ changed.
 
 ## 25. Known limitations
 
-Local database execution depends on the workstation Docker/PostgreSQL runtime.
-P15 remains blocked until the authoritative GitHub database workflow validates
-the new migration and all pgTAP/application gates.
+Local database execution still depends on the workstation Docker/PostgreSQL
+runtime. Authoritative GitHub validation passed, so this local limitation no
+longer blocks P15A closure. P16 remains blocked pending P15 closure.
 
 ## 26. Exact changed-file inventory
 
@@ -229,10 +245,11 @@ Modified:
 
 ## 27. Recommended next action
 
-Run GitHub Database infrastructure validation. After it passes, close P15A,
-mark P15 Ready, and resume P15 — Continuation without changing its canonical
-scope or `feat(continuation)` boundary.
+Begin P15 — Continuation. Its dependencies are P11, P13, P14, and the completed
+P15A corrective boundary; scope is return priority and the continuation card;
+acceptance is a strictly greater-than-30-minute return E2E; commit boundary is
+`feat(continuation)`. P16 remains blocked pending P15 closure.
 
 ## 28. Suggested commit message
 
-`fix(db): enforce strict return-session threshold`
+`docs(implementation): close P15A after CI validation`
