@@ -2,20 +2,20 @@
 
 ## Current package
 
-`P15B — Continuation Canonicalization Decision`
+`P15C — Meaningful Destination Boundary`
 
 ## Status
 
-Configured but awaiting review/commit
+Ready
 
 P10 remains Complete. P11A remains Complete. P11 remains Complete. P12 remains
 Complete. P13 remains Complete after verified GitHub application validation.
 P14A is Complete after verified GitHub Database infrastructure validation. P14
 is Complete after verified GitHub application validation of commit
 `2449c7f4e1aaf2ee31df344697bf8e9af48b4856`. P15A is Complete after verified
-GitHub Database infrastructure validation. P15B is Configured but awaiting
-review/commit. P15C is blocked pending P15B closure. P15 is blocked pending P15C
-Database CI closure. P16 remains blocked pending P15 closure.
+GitHub Database infrastructure validation. P15B is Complete at commit
+`11bed0f78638f4ed246fdf07d6792dcb744566ed`. P15C is Ready. P15 remains blocked
+pending P15C Database CI closure. P16 remains blocked pending P15 closure.
 
 P15A adds one forward-only migration correcting only the strict 30-minute
 boundary in `public.ensure_session`. P14A previously added one forward-only
@@ -49,6 +49,7 @@ Production deployment: not run.
   new return session reevaluates candidates. Telemetry is not state authority.
 - P15C owns the approved authenticated
   `record_meaningful_destination(uuid, text, uuid)` database boundary.
+- No telemetry event was added, and P15B contains no database implementation.
 
 ## P15A implementation
 
@@ -212,10 +213,9 @@ deployment, commit, or push was changed.
 
 ## Next action
 
-Review and commit P15B documentation. After P15B closure, begin P15C —
-Meaningful Destination Boundary. P15C depends on P05, P06, P09, P15A, and P15B;
-its objective is to record the identity-scoped qualified primary destination;
-its acceptance covers allowlist, active-session validation, idempotency, and
-identity isolation; and its commit boundary is
+Begin P15C — Meaningful Destination Boundary. P15C depends on P05, P06, P09,
+P15A, and P15B; its objective is to record the identity-scoped qualified primary
+destination; its acceptance covers allowlist, active-session validation,
+idempotency, and identity isolation; and its commit boundary is
 `feat(db): add meaningful destination boundary`. P15 remains blocked pending
 P15C Database CI closure. P16 remains blocked pending P15 closure.

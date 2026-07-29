@@ -4,7 +4,11 @@
 
 WP-006 / P15B — Continuation Canonicalization Decision.
 
-Status: **Configured but awaiting review/commit**.
+Status: **Complete**.
+
+Implementation commit:
+`11bed0f78638f4ed246fdf07d6792dcb744566ed`
+(`docs(continuation): freeze P15 canonical rules`).
 
 This is a documentation-only package. It freezes the Product, Design, Data, and
 Engineering rules required before the P15C database boundary and P15
@@ -133,8 +137,8 @@ P15C must:
 
 - P14: Complete.
 - P15A: Complete.
-- P15B: Configured but awaiting review/commit.
-- P15C: Blocked pending P15B closure.
+- P15B: Complete.
+- P15C: Ready.
 - P15: Blocked pending P15C Database CI closure.
 - P16: Blocked pending P15 closure.
 
@@ -152,7 +156,8 @@ P15C must:
 
 No application code, tests, migrations, telemetry contracts, workflows, package
 files, deployment state, or remote database state were changed. No P15 or P15C
-implementation is included.
+implementation is included. P15B added no telemetry event and no database
+implementation.
 
 ## 16. Files created
 
@@ -186,10 +191,9 @@ Results:
 
 ## 19. Next action
 
-Review and commit P15B documentation. After P15B closure, implement P15C as a
-forward-only database package and validate it through Database CI. P15 remains
-blocked until P15C Database CI closes.
+Begin P15C as a forward-only database package and validate it through Database
+CI. P15 remains blocked until P15C Database CI closes.
 
 ## 20. Suggested commit message
 
-`docs(continuation): freeze P15 canonical rules`
+`docs(implementation): close P15B and ready P15C`
