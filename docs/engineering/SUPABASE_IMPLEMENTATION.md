@@ -38,6 +38,11 @@ Every migration is forward-only, timestamped, reviewed, and tested against a cle
 8. Do not accept `anonymous_user_id`, `user_id`, `environment`, or `is_test` from untrusted event payloads; derive them server-side.
 9. Replace unrestricted `image_urls text[]` ingestion with curated catalog import validation and approved hosts.
 10. Completed challenge snapshots are append-only; revoke UPDATE/DELETE from application roles.
+11. Add `record_meaningful_destination(uuid, text, uuid)` as the only
+    application write boundary for `anonymous_users.last_meaningful_destination`.
+    It derives identity through `auth.uid()`, accepts only `discover`,
+    `wardrobe`, or `challenge`, validates an owned active session, and uses
+    deterministic operation replay/conflict semantics.
 
 ## 4. Ownership and deletion
 
@@ -74,9 +79,17 @@ Security-definer RPCs with fixed `search_path`, explicit grants, and `auth.uid()
 - `ensure_session`
 - `ensure_feed_instance`
 - `append_feed_batch`
+- `record_meaningful_destination`
 - `ingest_events`
 
 RPCs return `{ok, operation_id, state_revision, data, event_id}`. A repeated operation returns the original canonical result.
+
+Direct browser UPDATE of `anonymous_users` remains prohibited. Meaningful
+destination recording occurs only after the primary surface qualifies as
+viewed. A later return session receives a new session-bound feed; prior-session
+feed reuse is prohibited. Continuation dismissal/activation consumption remains
+identity-scoped, session-scoped, versioned browser state and requires no
+database table.
 
 ## 7. Local development
 

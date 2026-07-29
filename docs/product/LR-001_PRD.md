@@ -581,15 +581,47 @@ Exact identity and authentication implementation is outside this PRD and belongs
 
 ### 14.3 Return routing priority
 
-On a return session, route or cue the user according to this priority:
+After any separately owned interrupted-action recovery, resolve at most one
+continuation card for a return session according to this priority:
 
-1. recover from an interrupted critical action, if any;
-2. continue an incomplete challenge when meaningful progress exists;
-3. show the completed challenge state when completion is recent or directly relevant;
-4. return to the last meaningful primary destination;
-5. otherwise open Discover.
+1. continue the active incomplete Challenge when at least one valid selection
+   exists;
+2. show the latest completed Challenge only on the first return session after
+   that completion;
+3. return to Wardrobe when it is the last meaningful destination and at least
+   one non-removed saved row exists;
+4. otherwise show no card and open normal Discover.
 
 The product may use a lightweight “continue” module rather than force navigation, provided the user can resume with one clear action.
+
+Discover is the no-card fallback, not a continuation-card candidate. A new
+return session created after strictly more than 30 minutes uses a new
+session-bound feed instance; a prior session's feed instance must not be reused.
+Exact Discover restoration remains available only inside the same session,
+including return from Product Detail.
+
+For completed Challenge eligibility, “first return session after completion”
+means the current owned return session is the earliest return session whose
+`started_at` is later than the latest completion's `completed_at`. No earlier
+return session for the identity may have a `started_at` later than that
+completion.
+
+The only meaningful destinations are `discover`, `wardrobe`, and `challenge`.
+The destination is identity-scoped and is recorded only after its primary
+surface successfully qualifies as viewed. Product Detail and Challenge picker
+inherit their parent primary destination. Onboarding, continuation dismissal,
+and continuation activation do not directly overwrite the destination.
+
+An unavailable-only Wardrobe still qualifies when at least one non-removed
+saved row exists. A higher-priority candidate query or contract failure must not
+silently fall through to a lower candidate. Instead, Discover remains usable
+and the continuation area presents a compact retryable error.
+
+Dismissal and successful activation each consume the card for the current
+return session. Consumption survives reload in that session, while a new
+strictly-greater-than-30-minute return session reevaluates candidates.
+Consumption state is identity-scoped, session-scoped, versioned browser state;
+telemetry is evidence, not state authority.
 
 ### 14.4 Functional requirements
 
@@ -609,12 +641,20 @@ The product may use a lightweight “continue” module rather than force naviga
 
 **RET-008** Session boundaries used for return analysis shall be defined consistently in the analytics specification.
 
+**RET-009** At most one continuation card shall be displayed in a return
+session, and a consumed card shall remain hidden for that session.
+
+**RET-010** A continuation resolver failure shall not block normal Discover or
+fabricate a lower-priority candidate.
+
 ### 14.5 Acceptance criteria
 
 - Given onboarding was completed, when the user returns, then onboarding is not repeated.
 - Given saved items exist, when the user returns, then Wardrobe contains them.
 - Given an incomplete challenge with at least one selection, when the user returns, then a continuation cue or restored challenge is available.
-- Given a completed challenge, when the user returns, then its completed state remains accessible.
+- Given the latest Challenge completion has not yet been followed by a return session, when the first later return begins, then its completed state is offered once for that session.
+- Given no continuation candidate qualifies, when the user returns, then normal Discover opens without a continuation card.
+- Given a continuation card is dismissed or successfully activated, when Discover reloads in the same session, then the card remains hidden.
 - Given persisted state cannot be loaded, when the product opens, then a usable fallback experience appears and the failure is measurable.
 - Given the user resumes a challenge, when they navigate away, then they can still access all primary destinations.
 

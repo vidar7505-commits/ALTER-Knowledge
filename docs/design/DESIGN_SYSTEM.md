@@ -318,7 +318,7 @@ Use borders and tonal separation before shadows.
 | `BottomNav` | 3 destinations | default, active, focus, badge-dot |
 | `DesktopRail` | 3 destinations | default, active, focus |
 | `BackButton` | icon-only, icon+label | default, hover, focus, pressed |
-| `ContinuationCard` | challenge, wardrobe, discover | default, loading, dismissed |
+| `ContinuationCard` | challenge, wardrobe; Discover variant unused in LR-001 | default, loading, retryable-error, dismissed, activated |
 
 ### 5.2 Actions
 

@@ -211,6 +211,48 @@ identity
 
 Events explain transitions and support sequence analysis; state tables determine the current UI state.
 
+### 6.1 Meaningful destination authority
+
+The canonical allowlist is `discover`, `wardrobe`, and `challenge`. A value is
+recorded only after the owned primary surface successfully qualifies as viewed.
+Product Detail and Challenge picker inherit the parent destination. Onboarding,
+continuation dismissal, and continuation activation do not directly overwrite
+the value. View events provide reconciliation evidence but are not the state
+write or state authority.
+
+### 6.2 Continuation candidate semantics
+
+The resolver returns at most one candidate in this order:
+
+1. active incomplete Challenge with at least one valid selection;
+2. latest completed Challenge on the first return session after completion;
+3. Wardrobe when it is the last meaningful destination and at least one
+   non-removed saved row exists;
+4. no card and normal Discover.
+
+For a latest completion `c` and current owned return session `s`, completed
+Challenge eligibility is true exactly when `c.completed_at < s.started_at` and
+there is no earlier return session for that identity with a session number lower
+than `s.session_number` and a `started_at` later than `c.completed_at`.
+Deterministic completion ordering is `completed_at desc, id asc`.
+
+An unavailable-only Wardrobe may qualify. A higher-priority query or contract
+failure is a typed resolver failure and must not be interpreted as candidate
+absence or silently fall through.
+
+Discover is not a continuation-card candidate. A later return uses a new
+session-bound feed instance; prior-session feed reuse is prohibited. Exact feed
+restoration remains a same-session behavior.
+
+### 6.3 Consumption authority
+
+Dismissal and successful activation each consume the card for the current
+return session. The state is keyed by identity, canonical session ID, and
+storage schema version in browser state. Same-session reload preserves it; a
+new return session reevaluates candidates. Continuation telemetry measures
+view, selection, and dismissal but is not consumption-state authority. The
+existing continuation events are sufficient; no new event is required.
+
 ## 7. Session reconstruction
 
 1. Order events by `occurred_at`, then `client_sequence`, then `received_at`.

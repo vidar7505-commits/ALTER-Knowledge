@@ -18,7 +18,10 @@ Each package is independently reviewable and uses the commit boundary shown.
 | P12 | Product Detail | P11 | source-aware detail and save | back restoration, save rollback | `feat(product-detail)` |
 | P13 | Wardrobe | P06,P09,P12 | canonical saved grid and removal | cross-surface consistency, undo | `feat(wardrobe)` |
 | P14 | Challenge | P06,P08,P13 | start/select/remove/complete | idempotency, immutability, mismatch | `feat(challenge)` |
-| P15 | Continuation | P11,P13,P14 | return priority and card | >30 min return E2E | `feat(continuation)` |
+| P15A | Strict return-session threshold | P06,P11 | make exactly 30 minutes same-session and strictly greater return | strict threshold, identity isolation, Discover compatibility | `fix(db): enforce strict return-session threshold` |
+| P15B | Continuation canonicalization decision | P11,P13,P14,P15A | freeze continuation candidates, priority, recency, feed, destination, and consumption rules | canonical Product, Design, Data, and Engineering agreement | `docs(continuation): freeze P15 canonical rules` |
+| P15C | Meaningful Destination Boundary | P05,P06,P09,P15A,P15B | record identity-scoped qualified primary destination | allowlist, active-session validation, idempotency, identity isolation | `feat(db): add meaningful destination boundary` |
+| P15 | Continuation | P11,P13,P14,P15A,P15B,P15C | return priority and card | strictly >30 min return E2E | `feat(continuation)` |
 | P16 | Offline/recovery | P07,P11-P15 | queue, retry, corrupt-state handling | offline and interrupted mutation | `feat(recovery)` |
 | P17 | Analytics QA | P07,P14 | executable reconciliation and checks | full Data QA suite | `test(data-qa)` |
 | P18 | Accessibility/visual polish | P10-P16 | WCAG blockers and approved visuals | axe, keyboard, zoom, snapshots | `fix(a11y)` |

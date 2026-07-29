@@ -529,15 +529,23 @@ Each screen record identifies:
 
 ### RET-03 — Revisit completed Challenge
 
-**Trigger:** Recent completed state.  
-**Content:** Completed-look continuation card.  
+**Trigger:** Latest completion in the first return session after completion.
+**Content:** Completed-look continuation card.
 **Primary:** View look.
+**Rule:** Later return sessions do not repeat this completion cue.
 
 ### RET-04 — Return to Wardrobe
 
-**Trigger:** Wardrobe was last meaningful destination and no higher priority cue.  
-**Content:** Wardrobe continuation card.  
+**Trigger:** Wardrobe was last meaningful destination, at least one non-removed saved row exists, and no higher priority cue.
+**Content:** Wardrobe continuation card.
 **Primary:** Open Wardrobe.
+**Rule:** An unavailable-only Wardrobe may still qualify.
+
+### RET-04A — No continuation candidate
+
+**Trigger:** No canonical candidate qualifies.
+**Content:** Normal Discover without a continuation card.
+**Rule:** Discover is not itself a continuation-card candidate.
 
 ### RET-05 — Persisted-state failure
 
@@ -545,6 +553,20 @@ Each screen record identifies:
 **Content:** Usable default Discover plus banner.  
 **Primary:** Try again.  
 **Rule:** Do not silently overwrite remote/canonical state.
+
+### RET-05A — Continuation resolver failure
+
+**Trigger:** A higher-priority candidate query or contract fails.
+**Content:** Compact retryable error in the continuation region plus usable Discover.
+**Primary:** Try again.
+**Rule:** Do not silently fall through, fabricate a candidate, or expose raw errors.
+
+### RET-05B — Continuation consumed
+
+**Trigger:** The card was dismissed or successfully activated in the current return session.
+**Content:** Normal Discover without the consumed card.
+**Persistence:** Identity-scoped, session-scoped, versioned browser state survives same-session reload.
+**Reset:** A new strictly-greater-than-30-minute return session reevaluates candidates.
 
 ### RET-06 — Interrupted mutation recovery
 

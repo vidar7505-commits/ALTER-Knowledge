@@ -345,23 +345,40 @@ create table public.feed_instance_products (
 );
 ```
 
-## 11. Optional continuation persistence
+## 11. Meaningful destination boundary
 
-Cross-session dismissal is not required by default. Add this table only if Product confirms persistent dismissal:
+`anonymous_users.last_meaningful_destination` is identity-scoped canonical
+state. Its allowlist is exactly `discover`, `wardrobe`, and `challenge`.
+Product Detail and Challenge picker inherit their parent primary destination;
+onboarding, continuation dismissal, and continuation activation do not directly
+change the value.
 
-```sql
-create table public.continuation_preferences (
-  anonymous_user_id uuid primary key references public.anonymous_users(id) on delete cascade,
-  dismissed_cue_key text,
-  dismissed_at timestamptz,
-  operation_id uuid unique,
-  updated_at timestamptz not null default now()
-);
-```
+The application records a destination only after its primary surface
+successfully qualifies as viewed. Direct browser table UPDATE remains
+prohibited. The approved write boundary is:
 
-Session-only dismissal remains browser/session state and requires no table.
+`public.record_meaningful_destination(p_session_id uuid, p_destination text, p_operation_id uuid) returns jsonb`
 
-## 12. Required indexes
+The function derives ownership from `auth.uid()`, validates an owned active
+session using the strict P15A threshold, rejects foreign, ended, or stale
+sessions, enforces the destination allowlist, and uses operation replay/conflict
+semantics. Identical replay returns the original canonical result; reuse of an
+operation ID with a different session or destination is a conflict.
+`authenticated` receives EXECUTE only; `anon` and `PUBLIC` receive none. The
+return envelope includes `ok`, `operation_id`, `state_revision`, and `data`
+containing the destination, session ID, and server-recorded timestamp. It
+contains no ownership ID.
+
+## 12. Continuation consumption
+
+LR-001 does not persist continuation consumption in PostgreSQL. Dismissal and
+successful activation consume the card only for the current return session.
+Consumption is identity-scoped, session-scoped, versioned browser state and
+survives reload in that session. A new strictly-greater-than-30-minute return
+session reevaluates candidates. Telemetry is evidence, not consumption-state
+authority. No continuation preference table is required.
+
+## 13. Required indexes
 
 ```sql
 create index sessions_identity_started_idx

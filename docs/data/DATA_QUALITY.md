@@ -41,6 +41,16 @@ Critical transition expectations:
 - `challenge_completed` must reconcile one-to-one with immutable completion;
 - qualified Discover sessions should have `discover_viewed` and, where cards qualify, impressions;
 - return sessions require a valid prior eligible session.
+- meaningful destination changes must reconcile with a qualified
+  `discover_viewed`, `wardrobe_viewed`, or `challenge_viewed` in the same owned
+  active session;
+- continuation priority must reconcile to one candidate at most, and a
+  higher-priority query or contract failure must not appear as a lower-priority
+  selection;
+- completed-look cues must occur only in the first return session after the
+  latest completion;
+- later return sessions must not attach qualified feed depth to a prior
+  session's feed instance.
 
 Missing-event rate is reported by app version, platform, environment, and traffic source.
 
@@ -193,6 +203,9 @@ Difference classes:
 | Contract fixtures | yes | yes | sample | yes | yes |
 | RLS/two-user isolation | yes | yes | no | no | yes |
 | RPC idempotency | yes | yes | no | no | yes |
+| Meaningful-destination allowlist/session/identity isolation | yes | yes | no | no | yes |
+| Continuation priority and first-return completion | fixture | yes | sample | yes | yes |
+| Continuation consumption key/version/session isolation | fixture | yes | sample | no | yes |
 | Impression boundary tests | yes | yes | sample | no | yes |
 | State/event reconciliation | fixture | yes | yes | yes | yes |
 | Completion immutability | yes | yes | no | daily check | yes |

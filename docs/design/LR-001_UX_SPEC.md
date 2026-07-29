@@ -152,11 +152,16 @@ Shown at top of Discover for qualifying return sessions.
 
 Priority variants:
 
-1. **Recover action** — persistence mutation was interrupted.
-2. **Continue look** — Challenge has one or more valid selections and is incomplete.
-3. **Revisit completed look** — recent completed Challenge.
-4. **Back to Wardrobe** — last meaningful destination was Wardrobe and saved items exist.
-5. No card.
+1. **Continue look** — the active Challenge has one or more valid selections
+   and is incomplete.
+2. **Revisit completed look** — the latest completion is being seen in the
+   first return session after completion.
+3. **Back to Wardrobe** — the last meaningful destination was Wardrobe and at
+   least one non-removed saved row exists.
+4. No card; normal Discover remains the return surface.
+
+Discover is not a continuation-card candidate. Interrupted-action recovery is a
+separate recovery flow rather than a P15 continuation-card variant.
 
 Anatomy:
 
@@ -170,8 +175,12 @@ Anatomy:
 Rules:
 
 - Card is not a modal and never blocks Discover.
-- Dismissal persists for the current session.
-- Selecting card routes to the exact state.
+- At most one card is displayed per return session.
+- Dismissal consumes the card for the current return session.
+- Successful activation consumes the card and routes to the exact state.
+- Reload in the same session preserves consumed state.
+- A new strictly-greater-than-30-minute return session reevaluates candidates.
+- Consumption is identity-scoped, session-scoped, versioned browser state.
 - Card uses no urgency or streak language.
 
 ---
@@ -732,7 +741,8 @@ If persisted progress uses an incompatible definition:
 4. If onboarding is incomplete/not started, route to onboarding.
 5. If a critical state mutation was interrupted, show recovery.
 6. Otherwise route to Discover.
-7. Show one continuation card based on priority.
+7. Show at most one continuation card based on priority, or normal Discover
+   without a card when no candidate qualifies.
 
 This avoids forcing returning users directly into Challenge while preserving a clear one-action resume path.
 
@@ -752,12 +762,19 @@ Title: “After Dark”
 Status: “Completed”  
 Action: “View look”
 
+This variant is eligible only for the latest completion in the first return
+session whose start is later than that completion. It does not repeat in a
+later return session.
+
 #### Wardrobe return
 
 Eyebrow: “Pick up where you left off”  
 Title: “Your Wardrobe”  
 Status: “[n] saved pieces”  
 Action: “Open Wardrobe”
+
+At least one non-removed saved row is required. A Wardrobe containing only
+currently unavailable product metadata still qualifies.
 
 ### 9.3 Feed restoration
 
@@ -767,12 +784,25 @@ When returning within a preserved session or from Product Detail:
 
 On a later session:
 
-- open a coherent new Discover session;
-- do not attempt pixel-perfect scroll restoration unless feed version and content remain identical;
+- open a coherent new Discover session with a new session-bound feed instance;
+- never reuse a prior session's feed instance;
 - continuation card communicates preserved value;
 - prior saved state remains synchronized.
 
-### 9.4 Persisted-state failure
+Exact loaded-batch and scroll restoration remains unchanged inside the same
+session, including return from Product Detail.
+
+### 9.4 Continuation resolver failure
+
+If a higher-priority candidate query or contract fails:
+
+- do not fall through to a lower-priority candidate;
+- preserve usable Discover content;
+- show a compact retryable continuation error in the card region;
+- provide “Try again”;
+- do not expose raw service or database errors.
+
+### 9.5 Persisted-state failure
 
 If state cannot be loaded:
 
