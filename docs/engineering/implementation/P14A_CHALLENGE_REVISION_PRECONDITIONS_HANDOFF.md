@@ -2,10 +2,10 @@
 
 ## Status
 
-`Configured but awaiting CI validation`.
+`Complete`.
 
-P13 remains Complete. P14 remains blocked by the database boundary until this
-package passes GitHub Database infrastructure validation. P15 remains blocked.
+P13 remains Complete. P14A is Complete after verified GitHub Database
+infrastructure validation. P14 is Ready. P15 remains blocked.
 
 ## 1. Exact blocker resolved
 
@@ -226,6 +226,13 @@ No assertion or prior behavior was weakened.
 - `npm.cmd run build`: passed after allowing the repository's existing Google
   font fetch.
 - `git diff --check`: passed with working-copy line-ending warnings only.
+- GitHub Database infrastructure validation: passed.
+- Clean database reset: passed.
+- Strict database lint: passed.
+- All pgTAP suites: passed.
+- `supabase/tests/006_transactional_rpcs.sql`: passed.
+- `supabase/tests/010_challenge_revision_preconditions.sql`: passed.
+- Application validation gates: passed.
 
 No unsafe Docker workaround was attempted and no test was weakened.
 
@@ -237,9 +244,15 @@ require authoritative GitHub Database infrastructure validation.
 
 ## 21. GitHub CI status
 
-Pending. P14A is not Complete and P14 must remain blocked until GitHub Database
-infrastructure validation proves clean migration application, strict lint, all
-pgTAP suites, and application gates.
+Passed. GitHub Database infrastructure validation proved clean database reset,
+strict database lint, all pgTAP suites, and application validation gates.
+`006_transactional_rpcs.sql` and
+`010_challenge_revision_preconditions.sql` both passed.
+
+The passing suites validate revision mismatch behavior for select, remove, and
+complete; replay and operation-conflict semantics; two-user isolation; absent
+or non-executable old bypass signatures; and authenticated-only execution for
+the new signatures.
 
 ## 22. Cloud status
 
@@ -268,9 +281,9 @@ was changed.
 
 ## 25. Known limitations
 
-Local database execution is unavailable on this workstation. The new migration
-and pgTAP suite require GitHub Database infrastructure validation before P14A
-can close.
+Local database execution remains unavailable on this workstation. Authoritative
+GitHub Database infrastructure validation passed, so this does not block P14A
+closure.
 
 `remove_product` can still atomically clear an incomplete Challenge dependency
 as defined by P06/P13. It is outside P14A because it is a Wardrobe mutation, not
@@ -292,9 +305,10 @@ Modified:
 
 ## 27. Recommended next action
 
-Run GitHub Database infrastructure validation. If and only if clean reset,
-strict lint, every pgTAP suite, and application validation pass, close P14A and
-mark P14 Ready. P15 remains blocked.
+P14 — Challenge is Ready. Its dependencies are P06, P08, P13, and P14A; its
+scope is start, select, remove, and complete; its acceptance boundary is
+idempotency, immutability, and mismatch; and its commit boundary is
+`feat(challenge)`. P15 remains blocked.
 
 ## 28. Suggested commit message
 

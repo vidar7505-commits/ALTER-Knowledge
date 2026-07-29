@@ -6,12 +6,12 @@
 
 ## Status
 
-Configured but awaiting CI validation
+Complete
 
 P10 remains Complete. P11A remains Complete. P11 remains Complete. P12 remains
 Complete. P13 remains Complete after verified GitHub application validation.
-P14 remains blocked by the database boundary until P14A passes GitHub Database
-infrastructure validation. P15 remains blocked.
+P14A is Complete after verified GitHub Database infrastructure validation. P14
+is Ready. P15 remains blocked.
 
 Database changes: one forward-only P14A migration adds optimistic revision
 preconditions to the three active-state Challenge mutation RPCs.
@@ -59,7 +59,18 @@ Production deployment: not run.
 - `npm.cmd run test`: passed (28 test files / 139 tests).
 - `npm.cmd run build`: passed after allowing the existing Google font fetch.
 - `git diff --check`: passed with working-copy line-ending warnings only.
-- GitHub Database infrastructure validation: pending.
+- GitHub Database infrastructure validation: passed.
+- Clean database reset: passed.
+- Strict database lint: passed.
+- All pgTAP suites: passed.
+- `supabase/tests/006_transactional_rpcs.sql`: passed.
+- `supabase/tests/010_challenge_revision_preconditions.sql`: passed.
+- Application validation gates: passed.
+- Challenge revision mismatch behavior for select, remove, and complete: passed.
+- Replay and operation-conflict semantics: passed.
+- Two-user isolation: passed.
+- Old revision-bypass signatures: absent or non-executable.
+- New revision-aware signatures: authenticated-only.
 
 ## Security and scope review
 
@@ -74,6 +85,7 @@ deployment, commit, or push was changed.
 
 ## Next action
 
-Run GitHub Database infrastructure validation for P14A. Only after clean reset,
-strict lint, all pgTAP suites, and application gates pass may P14A be closed and
-P14 marked Ready. P15 must remain blocked.
+P14 — Challenge is Ready. Its dependencies are P06, P08, P13, and P14A; its
+scope is start, select, remove, and complete; its acceptance boundary is
+idempotency, immutability, and mismatch; and its commit boundary is
+`feat(challenge)`. P15 remains blocked.
