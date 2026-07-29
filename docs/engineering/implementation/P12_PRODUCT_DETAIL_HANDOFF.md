@@ -2,12 +2,12 @@
 
 ## Status
 
-`Configured but awaiting CI validation`.
+`Complete`.
 
 P12 local implementation, accessibility checks, production build, one-worker
-Playwright E2E, and visual certification are complete. P12 must not be marked
-Complete and P13 must remain blocked until the P12 commit passes GitHub
-application CI.
+Playwright E2E, visual certification, and GitHub application validation are
+complete. GitHub application validation passed for commit
+`bedd5e7068c63e15e3ebc1a732d162cf1c92667a`.
 
 ## Package and scope
 
@@ -165,9 +165,15 @@ not-found/unavailable, and mutation-error states.
 - `npm.cmd run typecheck`: passed.
 - `npm.cmd run test`: passed, 25 files / 124 tests.
 - `npm.cmd run build`: passed.
-- `npm.cmd run test:e2e -- --reporter=line --workers=1`: passed.
+- `npm.cmd run test:e2e -- --reporter=line --workers=1`: passed, 26 Chromium
+  tests with 1 worker.
 - `git diff --check`: passed.
 - Playwright/Next teardown: no remaining `node.exe` process.
+- Visual certification: passed at 320 × 700, 390 × 844, 768 × 1024,
+  1200 × 900, and 1440 × 1024.
+- GitHub application validation: passed for P12 commit
+  `bedd5e7068c63e15e3ebc1a732d162cf1c92667a`; all workflow jobs and steps were
+  reported green by the repository owner.
 
 ## Database and cloud record
 
@@ -181,16 +187,14 @@ not-found/unavailable, and mutation-error states.
 
 No remote database command, commit, push, or deployment was performed.
 
-## Known limitations and next action
+## Known limitations and next package
 
 The catalog detail RPC exposes active products only, so inactive and missing
 catalog records converge on the same canonical unavailable/not-found recovery
 surface. P13 cross-surface Wardrobe synchronization UI and Challenge post-save
 selection remain intentionally deferred.
 
-Suggested commit message:
-
-`feat(product-detail): complete source-aware Product Detail [WP-006-P12]`
-
-After commit and push by an authorized operator, require successful GitHub
-application CI. Only then may P12 be marked Complete and P13 unblocked.
+P13 is **P13 — Wardrobe**. Its objective is the canonical saved grid and
+removal; dependencies are P06, P09, and P12; acceptance requires cross-surface
+consistency and Undo; its commit boundary is `feat(wardrobe)`. P13 is now Ready
+(unblocked).
