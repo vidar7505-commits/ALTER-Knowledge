@@ -186,6 +186,7 @@ insert into public.sessions (
   environment
 )
 values
+  -- c520... is reserved for user A sessions.
   (
     'c5200000-0000-4000-8000-000000000001',
     'c5100000-0000-4000-8000-000000000001',
@@ -199,8 +200,9 @@ values
     'web_mobile',
     'local'
   ),
+  -- c521... is reserved for user B sessions.
   (
-    'c5200000-0000-4000-8000-000000000002',
+    'c5210000-0000-4000-8000-000000000001',
     'c5100000-0000-4000-8000-000000000002',
     1,
     statement_timestamp() - interval '10 minutes',
@@ -356,6 +358,80 @@ grant execute on function public.p15c_test_record_at_offset(
   interval
 ) to authenticated;
 
+create function public.p15c_test_ensure_at_offset(
+  p_existing_session_id uuid,
+  p_candidate_session_id uuid,
+  p_inactivity interval
+)
+returns jsonb
+language plpgsql
+volatile
+security definer
+set search_path = ''
+as $$
+declare
+  owner_id uuid := private.current_anonymous_user_id();
+  test_observed_at timestamptz := statement_timestamp();
+  prior_session_count bigint;
+  prior_max_session_number integer;
+  ensured jsonb;
+begin
+  -- Every boundary comparison and nested RPC uses this statement's timestamp.
+  select count(*), max(sessions.session_number)
+  into prior_session_count, prior_max_session_number
+  from public.sessions
+  where sessions.anonymous_user_id = owner_id;
+
+  update public.sessions
+  set
+    started_at = test_observed_at - interval '2 hours',
+    last_activity_at = test_observed_at - p_inactivity,
+    ended_at = null
+  where sessions.id = p_existing_session_id
+    and sessions.anonymous_user_id = owner_id
+    and sessions.session_number = prior_max_session_number;
+
+  if not found then
+    raise exception 'test latest owned session not found';
+  end if;
+
+  ensured := public.ensure_session(
+    p_candidate_session_id,
+    'p15c-test',
+    'web_mobile',
+    '/discover',
+    'p15c',
+    'meaningful-destination'
+  );
+
+  return jsonb_build_object(
+    'prior_max_session_number',
+    prior_max_session_number,
+    'prior_session_count',
+    prior_session_count,
+    'session',
+    ensured,
+    'session_count_after_ensure',
+    (
+      select count(*)
+      from public.sessions
+      where sessions.anonymous_user_id = owner_id
+    )
+  );
+end;
+$$;
+
+revoke all on function public.p15c_test_ensure_at_offset(
+  uuid,
+  uuid,
+  interval
+) from public, anon;
+grant execute on function public.p15c_test_ensure_at_offset(
+  uuid,
+  uuid,
+  interval
+) to authenticated;
+
 create function public.p15c_test_return_and_record(
   p_existing_session_id uuid,
   p_candidate_session_id uuid,
@@ -368,20 +444,36 @@ security definer
 set search_path = ''
 as $$
 declare
+  owner_id uuid := private.current_anonymous_user_id();
   test_observed_at timestamptz := statement_timestamp();
+  prior_session_count bigint;
+  prior_max_session_number integer;
+  session_count_after_ensure bigint;
+  session_count_after_record bigint;
+  recorded_session_number integer;
+  recorded_session_number_after integer;
+  recorded_session_owner uuid;
   ensured jsonb;
   recorded jsonb;
 begin
+  -- The latest owned session, not an arbitrary fixture row, defines return.
+  select count(*), max(sessions.session_number)
+  into prior_session_count, prior_max_session_number
+  from public.sessions
+  where sessions.anonymous_user_id = owner_id;
+
   update public.sessions
   set
     started_at = test_observed_at - interval '2 hours',
     last_activity_at =
       test_observed_at - interval '30 minutes 0.000001 seconds',
     ended_at = null
-  where sessions.id = p_existing_session_id;
+  where sessions.id = p_existing_session_id
+    and sessions.anonymous_user_id = owner_id
+    and sessions.session_number = prior_max_session_number;
 
   if not found then
-    raise exception 'test session not found';
+    raise exception 'test latest owned session not found';
   end if;
 
   ensured := public.ensure_session(
@@ -393,17 +485,55 @@ begin
     'meaningful-destination'
   );
 
+  select count(*)
+  into session_count_after_ensure
+  from public.sessions
+  where sessions.anonymous_user_id = owner_id;
+
+  select sessions.session_number, sessions.anonymous_user_id
+  into strict recorded_session_number, recorded_session_owner
+  from public.sessions
+  where sessions.id = (ensured ->> 'session_id')::uuid
+    and sessions.anonymous_user_id = owner_id;
+
   recorded := public.record_meaningful_destination(
     (ensured ->> 'session_id')::uuid,
     'challenge',
     p_operation_id
   );
 
+  select count(*)
+  into session_count_after_record
+  from public.sessions
+  where sessions.anonymous_user_id = owner_id;
+
+  select sessions.session_number
+  into strict recorded_session_number_after
+  from public.sessions
+  where sessions.id = (recorded -> 'data' ->> 'session_id')::uuid
+    and sessions.anonymous_user_id = owner_id;
+
   return jsonb_build_object(
+    'owner_id',
+    owner_id,
+    'prior_max_session_number',
+    prior_max_session_number,
+    'prior_session_count',
+    prior_session_count,
     'recorded',
     recorded,
+    'recorded_session_number',
+    recorded_session_number,
+    'recorded_session_number_after',
+    recorded_session_number_after,
+    'recorded_session_owner',
+    recorded_session_owner,
     'session',
-    ensured
+    ensured,
+    'session_count_after_ensure',
+    session_count_after_ensure,
+    'session_count_after_record',
+    session_count_after_record
   );
 end;
 $$;
@@ -424,6 +554,12 @@ set local "request.jwt.claim.sub" =
   'c5000000-0000-4000-8000-000000000001';
 set local "request.jwt.claims" =
   '{"sub":"c5000000-0000-4000-8000-000000000001","role":"authenticated"}';
+
+select is(
+  auth.uid(),
+  'c5000000-0000-4000-8000-000000000001'::uuid,
+  'allowlist assertions run as user A'
+);
 
 select throws_ok(
   $$
@@ -537,6 +673,12 @@ set local "request.jwt.claim.sub" =
   'c5000000-0000-4000-8000-000000000001';
 set local "request.jwt.claims" =
   '{"sub":"c5000000-0000-4000-8000-000000000001","role":"authenticated"}';
+
+select is(
+  auth.uid(),
+  'c5000000-0000-4000-8000-000000000001'::uuid,
+  'state and session assertions run as user A'
+);
 
 create temporary table p15c_results (
   result_name text primary key,
@@ -676,7 +818,7 @@ select is(
 select throws_ok(
   $$
     select public.record_meaningful_destination(
-      'c5200000-0000-4000-8000-000000000002',
+      'c5210000-0000-4000-8000-000000000001',
       'discover',
       'c5300000-0000-4000-8000-000000000020'
     )
@@ -777,16 +919,53 @@ select ok(
   (
     select
       (result -> 'session' ->> 'session_id')::uuid =
+        'c5200000-0000-4000-8000-000000000007'::uuid
+      and (result -> 'session' ->> 'session_number')::integer =
+        (result ->> 'prior_max_session_number')::integer
+      and (result ->> 'session_count_after_ensure')::bigint =
+        (result ->> 'prior_session_count')::bigint
+    from (
+      select public.p15c_test_ensure_at_offset(
+        'c5200000-0000-4000-8000-000000000007',
+        'c5200000-0000-4000-8000-000000000009',
+        interval '30 minutes'
+      ) as result
+    ) as exact_session_boundary
+  ),
+  'ensure_session keeps the latest owned session at exactly 30 minutes'
+);
+
+select is(
+  auth.uid(),
+  'c5000000-0000-4000-8000-000000000001'::uuid,
+  'the greater-than-30-minute return assertion runs as user A'
+);
+
+select ok(
+  (
+    select
+      (result -> 'session' ->> 'session_id')::uuid =
         'c5200000-0000-4000-8000-000000000008'::uuid
-      and (result -> 'session' ->> 'session_number')::integer = 7
       and (result -> 'session' ->> 'is_return_session')::boolean
+      and (result ->> 'owner_id')::uuid =
+        'c5100000-0000-4000-8000-000000000001'::uuid
+      and (result ->> 'recorded_session_owner')::uuid =
+        'c5100000-0000-4000-8000-000000000001'::uuid
+      and (result ->> 'recorded_session_number')::integer =
+        (result ->> 'prior_max_session_number')::integer + 1
+      and (result ->> 'recorded_session_number_after')::integer =
+        (result ->> 'recorded_session_number')::integer
+      and (result ->> 'session_count_after_ensure')::bigint =
+        (result ->> 'prior_session_count')::bigint + 1
+      and (result ->> 'session_count_after_record')::bigint =
+        (result ->> 'session_count_after_ensure')::bigint
       and (result -> 'recorded' ->> 'state_revision')::bigint = 7
       and result -> 'recorded' -> 'data' ->> 'destination' = 'challenge'
       and (result -> 'recorded' -> 'data' ->> 'session_id')::uuid =
         'c5200000-0000-4000-8000-000000000008'::uuid
     from (
       select public.p15c_test_return_and_record(
-        'c5200000-0000-4000-8000-000000000006',
+        'c5200000-0000-4000-8000-000000000007',
         'c5200000-0000-4000-8000-000000000008',
         'c5300000-0000-4000-8000-000000000027'
       ) as result
@@ -796,6 +975,26 @@ select ok(
 );
 
 reset role;
+
+create temporary table p15c_user_a_lineage_after_return as
+select array_agg(
+  sessions.session_number
+  order by sessions.session_number
+) as session_numbers
+from public.sessions
+where sessions.anonymous_user_id =
+  'c5100000-0000-4000-8000-000000000001';
+
+select is(
+  (
+    select array_agg(sessions.session_number order by sessions.session_number)
+    from public.sessions
+    where sessions.anonymous_user_id =
+      'c5100000-0000-4000-8000-000000000002'
+  ),
+  array[1],
+  'user A return does not increment user B session lineage'
+);
 
 select is(
   (
@@ -898,7 +1097,7 @@ select throws_ok(
 select throws_ok(
   $$
     select public.record_meaningful_destination(
-      'c5200000-0000-4000-8000-000000000002',
+      'c5210000-0000-4000-8000-000000000001',
       'discover',
       'c5300000-0000-4000-8000-000000000010'
     )
@@ -913,11 +1112,11 @@ select ok(
     select
       result -> 'data' ->> 'destination' = 'wardrobe'
       and (result -> 'data' ->> 'session_id')::uuid =
-        'c5200000-0000-4000-8000-000000000002'::uuid
+        'c5210000-0000-4000-8000-000000000001'::uuid
       and (result ->> 'state_revision')::bigint = 1
     from (
       select public.record_meaningful_destination(
-        'c5200000-0000-4000-8000-000000000002',
+        'c5210000-0000-4000-8000-000000000001',
         'wardrobe',
         'c5300000-0000-4000-8000-000000000031'
       ) as result
@@ -926,15 +1125,53 @@ select ok(
   'user B records only user B canonical state'
 );
 
+select ok(
+  (
+    select
+      (result -> 'session' ->> 'session_id')::uuid =
+        'c5210000-0000-4000-8000-000000000002'::uuid
+      and (result -> 'session' ->> 'session_number')::integer =
+        (result ->> 'prior_max_session_number')::integer + 1
+      and (result ->> 'recorded_session_owner')::uuid =
+        'c5100000-0000-4000-8000-000000000002'::uuid
+      and (result ->> 'recorded_session_number_after')::integer =
+        (result -> 'session' ->> 'session_number')::integer
+      and (result ->> 'session_count_after_record')::bigint =
+        (result ->> 'prior_session_count')::bigint + 1
+    from (
+      select public.p15c_test_return_and_record(
+        'c5210000-0000-4000-8000-000000000001',
+        'c5210000-0000-4000-8000-000000000002',
+        'c5300000-0000-4000-8000-000000000032'
+      ) as result
+    ) as user_b_return
+  ),
+  'user B return advances only user B session lineage'
+);
+
 reset role;
+
+select is(
+  (
+    select array_agg(
+      sessions.session_number
+      order by sessions.session_number
+    )
+    from public.sessions
+    where sessions.anonymous_user_id =
+      'c5100000-0000-4000-8000-000000000001'
+  ),
+  (select session_numbers from p15c_user_a_lineage_after_return),
+  'user B return does not increment user A session lineage'
+);
 
 select ok(
   (
     select
       user_a.last_meaningful_destination = 'challenge'
       and user_a.state_revision = 7
-      and user_b.last_meaningful_destination = 'wardrobe'
-      and user_b.state_revision = 1
+      and user_b.last_meaningful_destination = 'challenge'
+      and user_b.state_revision = 2
     from public.anonymous_users as user_a
     cross join public.anonymous_users as user_b
     where user_a.id = 'c5100000-0000-4000-8000-000000000001'
@@ -946,21 +1183,70 @@ select ok(
 select ok(
   (
     select
-      count(*) filter (
-        where sessions.anonymous_user_id =
-          'c5100000-0000-4000-8000-000000000001'
-      ) = 7
-      and count(*) filter (
-        where sessions.anonymous_user_id =
-          'c5100000-0000-4000-8000-000000000002'
-      ) = 1
-      and max(sessions.session_number) filter (
-        where sessions.anonymous_user_id =
-          'c5100000-0000-4000-8000-000000000002'
-      ) = 1
-    from public.sessions
+      user_a.minimum_session_number = 1
+      and user_a.maximum_session_number = user_a.session_count
+      and user_a.distinct_session_count = user_a.session_count
+      and user_b.minimum_session_number = 1
+      and user_b.maximum_session_number = user_b.session_count
+      and user_b.distinct_session_count = user_b.session_count
+    from (
+      select
+        min(sessions.session_number) as minimum_session_number,
+        max(sessions.session_number) as maximum_session_number,
+        count(*)::integer as session_count,
+        count(distinct sessions.session_number)::integer
+          as distinct_session_count
+      from public.sessions
+      where sessions.anonymous_user_id =
+        'c5100000-0000-4000-8000-000000000001'
+    ) as user_a
+    cross join (
+      select
+        min(sessions.session_number) as minimum_session_number,
+        max(sessions.session_number) as maximum_session_number,
+        count(*)::integer as session_count,
+        count(distinct sessions.session_number)::integer
+          as distinct_session_count
+      from public.sessions
+      where sessions.anonymous_user_id =
+        'c5100000-0000-4000-8000-000000000002'
+    ) as user_b
   ),
   'session-number lineages remain identity-scoped'
+);
+
+select ok(
+  not exists (
+    select sessions.id
+    from public.sessions
+    group by sessions.id
+    having count(distinct sessions.anonymous_user_id) > 1
+  ),
+  'no session ID belongs to more than one identity'
+);
+
+select ok(
+  exists (
+    select 1
+    from private.mutation_operations
+    where mutation_operations.operation_id =
+        'c5300000-0000-4000-8000-000000000010'
+      and mutation_operations.anonymous_user_id =
+        'c5100000-0000-4000-8000-000000000001'
+  )
+  and exists (
+    select 1
+    from private.mutation_operations
+    where mutation_operations.operation_id in (
+        'c5300000-0000-4000-8000-000000000031',
+        'c5300000-0000-4000-8000-000000000032'
+      )
+      and mutation_operations.anonymous_user_id =
+        'c5100000-0000-4000-8000-000000000002'
+    group by mutation_operations.anonymous_user_id
+    having count(*) = 2
+  ),
+  'operation-ledger rows remain identity-isolated'
 );
 
 select ok(
