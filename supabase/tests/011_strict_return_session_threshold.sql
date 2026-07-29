@@ -569,6 +569,20 @@ select is(
   'a later repeated call reuses session two instead of creating session three'
 );
 
+reset role;
+
+set local role authenticated;
+set local "request.jwt.claim.sub" =
+  'a1500000-0000-4000-8000-000000000002';
+set local "request.jwt.claims" =
+  '{"sub":"a1500000-0000-4000-8000-000000000002","role":"authenticated"}';
+
+select is(
+  auth.uid(),
+  'a1500000-0000-4000-8000-000000000002'::uuid,
+  'the foreign-session assertion runs as user B'
+);
+
 select throws_ok(
   $$
     select public.ensure_session(
@@ -584,14 +598,6 @@ select throws_ok(
   'session ownership mismatch',
   'user B cannot reuse user A session'
 );
-
-reset role;
-
-set local role authenticated;
-set local "request.jwt.claim.sub" =
-  'a1500000-0000-4000-8000-000000000002';
-set local "request.jwt.claims" =
-  '{"sub":"a1500000-0000-4000-8000-000000000002","role":"authenticated"}';
 
 select ok(
   (
