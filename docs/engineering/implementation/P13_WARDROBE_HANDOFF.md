@@ -2,12 +2,11 @@
 
 ## Status
 
-`Configured but awaiting CI validation`.
+`Complete`.
 
 P13 local implementation, unit/component validation, production build,
 one-worker Playwright E2E, accessibility checks, and visual certification are
-complete. GitHub application CI has not yet run for this uncommitted working
-tree, so P13 is not marked Complete.
+complete. GitHub application validation passed for the P13 commit.
 
 ## 1. Preflight
 
@@ -301,8 +300,8 @@ Product Detail return is behaviorally certified in E2E.
 - Full `npm.cmd run test:e2e -- --reporter=line --workers=1`: passed, 38 tests,
   one worker.
 - `git diff --check`: passed.
-- No separate accessibility command exists in `package.json`; axe runs in
-  `npm.cmd run test`.
+- Accessibility passed, including axe coverage in `npm.cmd run test`.
+- Playwright teardown completed with no orphan ALTER-related processes.
 
 ## 25. Database status
 
@@ -310,12 +309,14 @@ Product Detail return is behaviorally certified in E2E.
 - Migration files changed: None.
 - Cloud migrations deployed: None.
 - Hosted development schema updated: No.
-- Remote reset/push/seed: not run.
+- Remote reset: not run.
+- Remote migration push: not run.
+- Remote seed push: not run.
+- Production deployment: not run.
 
 ## 26. CI status
 
-Configured but awaiting CI validation. GitHub application CI has not run for
-this uncommitted P13 working tree.
+GitHub application validation passed for the P13 commit. P13 is Complete.
 
 ## 27. Cloud status
 
@@ -348,7 +349,6 @@ scope leaked into P13.
   truthfully labels the saved row unavailable without inventing former
   brand/name/image metadata.
 - Durable offline mutation/replay remains P16.
-- GitHub CI is pending.
 
 ## 31. Deferred P14 work
 
@@ -366,9 +366,10 @@ and implementation status.
 
 ## 33. Recommended next package
 
-P14 — Challenge is the next package in the implementation plan, but it must not
-be marked Ready/started until P13 receives GitHub CI closure.
+P14 — Challenge is Ready and remains unimplemented. It depends on P06, P08, and
+P13 and owns start/select/remove/complete, with idempotency, immutability, and
+mismatch acceptance.
 
 ## 34. Suggested commit message
 
-`feat(wardrobe): implement canonical saved grid and undo`
+`docs(implementation): close P13 after CI validation`
