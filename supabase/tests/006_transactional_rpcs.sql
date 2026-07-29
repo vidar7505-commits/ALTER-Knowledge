@@ -26,13 +26,14 @@ select is(
         'ensure_session',
         'ensure_feed_instance',
         'append_feed_batch',
-        'record_qualified_feed_position'
+        'record_qualified_feed_position',
+        'record_meaningful_destination'
       )
       and pg_proc.prosecdef
       and 'search_path=""' = any(pg_proc.proconfig)
       and pg_get_userbyid(pg_proc.proowner) = 'postgres'
   ),
-  13::bigint,
+  14::bigint,
   'every client RPC is security definer, postgres-owned, and fixes an empty search path'
 );
 
@@ -79,7 +80,8 @@ select is(
         ('public.append_feed_batch(uuid,text,integer)'),
         (
           'public.record_qualified_feed_position(uuid,uuid,uuid,integer)'
-        )
+        ),
+        ('public.record_meaningful_destination(uuid,text,uuid)')
     )
     select count(*)
     from expected
@@ -103,8 +105,8 @@ select is(
           and function_acl.privilege_type = 'EXECUTE'
       )
   ),
-  16::bigint,
-  'only authenticated clients can execute the sixteen intended client RPCs'
+  17::bigint,
+  'only authenticated clients can execute the seventeen intended client RPCs'
 );
 
 select ok(
@@ -128,7 +130,8 @@ select ok(
         ('public.append_feed_batch(uuid,text,integer)'),
         (
           'public.record_qualified_feed_position(uuid,uuid,uuid,integer)'
-        )
+        ),
+        ('public.record_meaningful_destination(uuid,text,uuid)')
     ),
     expected_oids(oid) as (
       select to_regprocedure(expected.signature)::oid
@@ -185,7 +188,8 @@ select ok(
         'ensure_session',
         'ensure_feed_instance',
         'append_feed_batch',
-        'record_qualified_feed_position'
+        'record_qualified_feed_position',
+        'record_meaningful_destination'
       )
       and pg_proc.proargnames
         && array['anonymous_user_id', 'user_id', 'wardrobe_id']::text[]
@@ -217,7 +221,8 @@ select ok(
         'ensure_session',
         'ensure_feed_instance',
         'append_feed_batch',
-        'record_qualified_feed_position'
+        'record_qualified_feed_position',
+        'record_meaningful_destination'
       )
       and lower(pg_proc.prosrc) ~ '(^|[^a-z])execute([^a-z]|$)'
   ),

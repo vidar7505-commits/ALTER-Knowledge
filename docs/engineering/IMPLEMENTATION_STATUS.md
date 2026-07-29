@@ -6,7 +6,7 @@
 
 ## Status
 
-Ready
+Configured but awaiting CI validation
 
 P10 remains Complete. P11A remains Complete. P11 remains Complete. P12 remains
 Complete. P13 remains Complete after verified GitHub application validation.
@@ -14,8 +14,9 @@ P14A is Complete after verified GitHub Database infrastructure validation. P14
 is Complete after verified GitHub application validation of commit
 `2449c7f4e1aaf2ee31df344697bf8e9af48b4856`. P15A is Complete after verified
 GitHub Database infrastructure validation. P15B is Complete at commit
-`11bed0f78638f4ed246fdf07d6792dcb744566ed`. P15C is Ready. P15 remains blocked
-pending P15C Database CI closure. P16 remains blocked pending P15 closure.
+`11bed0f78638f4ed246fdf07d6792dcb744566ed`. P15C is Configured but awaiting CI
+validation. P15 remains blocked pending P15C Database CI closure. P16 remains
+blocked pending P15 closure.
 
 P15A adds one forward-only migration correcting only the strict 30-minute
 boundary in `public.ensure_session`. P14A previously added one forward-only
@@ -26,6 +27,54 @@ Hosted development schema updated: No.
 Remote reset: not run.
 Remote migration push: not run.
 Remote seed push: not run.
+Production deployment: not run.
+
+## P15C implementation
+
+- Added the forward-only migration
+  `20260729000300_meaningful_destination_boundary.sql`.
+- Added the sole approved
+  `public.record_meaningful_destination(uuid,text,uuid) returns jsonb`
+  application write boundary for
+  `anonymous_users.last_meaningful_destination`.
+- Derives ownership exclusively through
+  `private.current_anonymous_user_id()` and accepts no owner, anonymous-user, or
+  auth-user identifier.
+- Accepts only exact lowercase `discover`, `wardrobe`, or `challenge`; invalid,
+  blank, null, and mixed-case destinations are rejected without a successful
+  ledger result.
+- Validates that the supplied session belongs to the current identity, is not
+  ended, and remains active under the P15A boundary:
+  `last_activity_at >= statement_timestamp() - interval '30 minutes'`.
+- Rejects missing, foreign, ended, and strictly-greater-than-30-minute stale
+  sessions without mutating identity, session, or feed state.
+- Uses the existing `private.mutation_operations` ledger. Identical replay
+  returns the original result without a second revision increment; reuse with
+  another owner, session, or destination remains a deterministic
+  `operation_id conflict`.
+- Updates only the current identity's destination and increments
+  `anonymous_users.state_revision` exactly once for each fresh successful
+  operation. The existing `updated_at` trigger supplies the canonical server
+  audit timestamp returned as `recorded_at`.
+- Preserves direct browser UPDATE denial, RLS, session numbering, P11 feed
+  ownership, telemetry taxonomy, and all historical migrations.
+- Added
+  `supabase/tests/012_meaningful_destination_boundary.sql` with 44 deterministic
+  pgTAP assertions covering structure, grants, allowlist, active-session
+  precision, state mutation, replay/conflict, identity isolation, return-session
+  integration, and feed regression.
+- Updated only the existing exact RPC allow-list assertions in
+  `supabase/tests/006_transactional_rpcs.sql` for the new approved signature.
+- No column CHECK constraint was added because a forward-only migration cannot
+  prove that every previously deployed historical value complies; the RPC is
+  the exclusive application write boundary and enforces the frozen allowlist.
+
+Database changes: one forward-only function migration.
+New migrations: one.
+Cloud migrations deployed: None.
+Hosted development schema updated: No.
+Remote reset: not run.
+Remote migration push: not run.
 Production deployment: not run.
 
 ## P15B canonicalization
@@ -213,9 +262,7 @@ deployment, commit, or push was changed.
 
 ## Next action
 
-Begin P15C — Meaningful Destination Boundary. P15C depends on P05, P06, P09,
-P15A, and P15B; its objective is to record the identity-scoped qualified primary
-destination; its acceptance covers allowlist, active-session validation,
-idempotency, and identity isolation; and its commit boundary is
-`feat(db): add meaningful destination boundary`. P15 remains blocked pending
-P15C Database CI closure. P16 remains blocked pending P15 closure.
+Run GitHub Database infrastructure validation for P15C. P15C remains Configured
+but awaiting CI validation until clean reset, strict lint, all pgTAP suites, and
+application gates pass. P15 remains blocked pending P15C Database CI closure.
+P16 remains blocked pending P15 closure.
