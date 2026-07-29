@@ -119,7 +119,7 @@ test('restores the same feed and scroll context after Product Detail back', asyn
   ]);
   await expect(page).toHaveURL(/\/product\//);
   await expect(
-    page.getByRole('heading', { name: 'Product preview' }),
+    page.getByRole('button', { name: 'Go back to Discover' }),
   ).toBeVisible();
   await page.goBack();
   await expect(page.locator('[data-product-id]')).toHaveCount(before.length);

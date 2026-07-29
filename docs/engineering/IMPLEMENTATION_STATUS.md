@@ -2,15 +2,15 @@
 
 ## Current package
 
-`P11 — Discover`
+`P12 — Product Detail`
 
 ## Status
 
-Complete
+Configured but awaiting CI validation
 
-P10 remains Complete. P11A remains Complete. P11 implementation, unit testing, production build, Playwright E2E suite, visual certification, handoff documentation, and GitHub application CI validation are Complete. **P12 — Product Detail is Ready (unblocked)**.
+P10 remains Complete. P11A remains Complete. P11 remains Complete. P12 local implementation, test expansion, accessibility review, production build, one-worker Playwright E2E, and visual certification are complete. **P13 — Wardrobe is Blocked pending P12 CI closure**.
 
-Database changes: None (P11 uses P11A RPC boundaries).
+Database changes: None (P12 uses P11A catalog and state RPC boundaries).
 Cloud migrations deployed: None.
 Hosted development schema updated: No.
 Remote reset: not run.
@@ -19,36 +19,38 @@ Remote seed push: not run.
 
 ## Validation status
 
-- GitHub application validation: passed.
 - `npm.cmd run format:check`: passed.
 - `npm.cmd run lint`: passed (0 warnings, 0 errors).
 - `npm.cmd run typecheck`: passed.
-- `npm.cmd run test`: passed (24 test files / 118 tests passed).
+- `npm.cmd run test`: passed (25 test files / 124 tests).
 - `npm.cmd run build`: passed with exit code 0.
-- `npm.cmd run test:e2e -- --reporter=line --workers=1`: passed (18 Playwright tests passed, exit code 0).
-- Playwright teardown: completed with no orphan ALTER-related `node.exe` processes.
+- `npm.cmd run test:e2e -- --reporter=line --workers=1`: passed.
+- Playwright teardown: completed with no orphan ALTER-related `node.exe` process.
 - `git diff --check`: passed.
-- Visual certification: passed at all five canonical viewports (320 × 700, 390 × 844, 768 × 1024, 1200 × 900, 1440 × 1024) across all required visual states.
+- Visual certification: passed at 320 × 700, 390 × 844, 768 × 1024, 1200 × 900, and 1440 × 1024 with additional P12 state captures.
+- GitHub application CI: pending.
 - Cloud deployment: None; no remote commands were run.
 
-## Implemented P11 scope
+## Implemented P12 scope
 
-- Deterministic feed loading and rendering powered by P11A database RPC boundaries.
-- Opaque versioned cursor pagination (`lr001-feed-cursor-v1`).
-- Session restoration via `sessionStorage` (request cursors, anchor product, scroll offset).
-- Telemetry-first 50% / 1,000 ms continuous foreground visibility observation and depth recording.
-- Feed card save and remove toggle using `save_product` and `remove_product` RPCs.
-- Reversible removal feedback via canonical 5-second `SYS-07` Undo toast.
-- P12 Product Detail boundary placeholder with scroll and context preservation.
+- Canonical `/product/[productId]` Product Detail route experience.
+- Catalog data read via `CatalogService.getProduct()` boundary (`get_catalog_product` RPC).
+- Canonical Discover, Wardrobe, Challenge, and direct-entry source contexts with safe Back fallback.
+- Discriminated state machine: `loading → ready / not_found / error`.
+- Product save/remove toggle using canonical `save_product(uuid,uuid,text)` and `remove_product(uuid,uuid)` RPC signatures.
+- 5-second Undo toast on remove.
+- Complete canonical telemetry events (`product_detail_opened`, `product_detail_closed`, `product_detail_failed`, `product_save_requested`, `product_saved`, `product_remove_requested`, `product_removed`, `product_save_failed`).
+- Native mobile scroll-snap gallery, desktop vertical thumbnails, accessible index announcement, stable image failures, metadata display, and responsive split layout.
+- Request-version and operation-identity guards prevent stale route/mutation responses and duplicate activation.
 
 ## Explicitly deferred
 
-- Product Detail (`P12`), Wardrobe (`P13`), Challenge (`P14`), continuation (`P15`), durable offline recovery (`P16`), analytics QA (`P17`), release polish (`P18`), and production deployment.
+- Wardrobe (`P13`), Challenge (`P14`), continuation (`P15`), durable offline recovery (`P16`), analytics QA (`P17`), release polish (`P18`), and production deployment.
 
 ## Security and scope review
 
-No service-role credentials, direct session/feed table DML grants, or caller-controlled ownership fields were introduced. All mutations use ownership-safe RPCs deriving identity from `auth.uid()`. Feed ordering remains strictly deterministic. Undo scope adheres to canonical PRD, UX Spec, Design System, Screen Inventory, and Telemetry specifications.
+No service-role credentials or bypasses introduced. Save and remove operations derive anonymous user identity safely via Supabase RLS and RPC boundaries. All telemetry envelopes conform to LR-001 schema requirements.
 
 ## Next action
 
-Proceed to **P12 — Product Detail** (`feat(product-detail)`), now Ready (unblocked).
+Commit and push P12 through an authorized workflow, then require successful GitHub application CI before marking P12 Complete or unblocking **P13 — Wardrobe** (`feat(wardrobe)`).

@@ -163,7 +163,7 @@ test('certifies pagination, save, Undo, restoration, and detail states', async (
   await detailLink.scrollIntoViewIfNeeded();
   await detailLink.click();
   await expect(
-    page.getByRole('heading', { name: 'Product preview' }),
+    page.getByRole('button', { name: 'Go back to Discover' }),
   ).toBeVisible();
   await capture(page, testInfo, 'M390-product-detail-boundary');
   await page.goBack();

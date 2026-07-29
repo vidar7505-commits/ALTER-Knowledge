@@ -1,4 +1,4 @@
-import { ProductDetailBoundary } from '@/features/discover/product-detail-boundary';
+import { ProductDetailExperience } from '@/features/product-detail/product-detail-experience';
 
 export default async function ProductDetailPage({
   params,
@@ -6,5 +6,5 @@ export default async function ProductDetailPage({
   params: Promise<{ productId: string }>;
 }) {
   const { productId } = await params;
-  return <ProductDetailBoundary productId={productId} />;
+  return <ProductDetailExperience key={productId} productId={productId} />;
 }

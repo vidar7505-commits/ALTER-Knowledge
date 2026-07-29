@@ -66,6 +66,11 @@ export async function mockAnonymousIdentity(
     paginationDelayMs?: number;
     productCount?: number;
     productImageFailure?: boolean;
+    productDetailErrorOnce?: boolean;
+    mutationErrorOnce?: boolean;
+    multipleProductImages?: boolean;
+    initialSavedProduct?: boolean;
+    partialProductMetadata?: boolean;
   } = {},
 ) {
   let onboardingStatus =
@@ -77,6 +82,8 @@ export async function mockAnonymousIdentity(
   let ensureFeedCalls = 0;
   let initialFeedErrorRemaining = options.initialFeedErrorOnce ? 1 : 0;
   let paginationErrorRemaining = options.paginationErrorOnce ? 1 : 0;
+  let productDetailErrorRemaining = options.productDetailErrorOnce ? 1 : 0;
+  let mutationErrorRemaining = options.mutationErrorOnce ? 1 : 0;
   const appendCursors: Array<string | null> = [];
   const telemetryEvents: Array<Record<string, unknown>> = [];
   const savedProducts = new Map<string, string>();
@@ -102,7 +109,9 @@ export async function mockAnonymousIdentity(
           : 'Fixture Studio',
       category,
       subcategory: `${category}-fixture`,
-      image_urls: [productImage],
+      image_urls: options.multipleProductImages
+        ? [productImage, `${productImage}&ixid=secondary-${position}`]
+        : [productImage],
       image_metadata: {
         primary_index: 0,
         images: [
@@ -113,6 +122,17 @@ export async function mockAnonymousIdentity(
             aspect_ratio: 0.8,
             alt: `Fixture Studio Canonical Product ${position}, ${category}.`,
           },
+          ...(options.multipleProductImages
+            ? [
+                {
+                  url: `${productImage}&ixid=secondary-${position}`,
+                  width: 1200,
+                  height: 1500,
+                  aspect_ratio: 0.8,
+                  alt: `Fixture Studio Canonical Product ${position}, alternate view.`,
+                },
+              ]
+            : []),
         ],
       },
       price_amount: 100 + position,
@@ -120,6 +140,12 @@ export async function mockAnonymousIdentity(
       catalog_version: 'lr001-catalog-v1',
     };
   });
+  if (options.initialSavedProduct && discoverProducts[0]) {
+    savedProducts.set(
+      discoverProducts[0].product_id,
+      '70000000-0000-4000-8000-000000000001',
+    );
+  }
 
   await page.route('**/api/telemetry', async (route) => {
     const request = (route.request().postDataJSON() ?? {}) as {
@@ -304,6 +330,66 @@ export async function mockAnonymousIdentity(
       return;
     }
 
+    if (url.pathname === '/rest/v1/rpc/get_catalog_product') {
+      if (productDetailErrorRemaining > 0) {
+        productDetailErrorRemaining -= 1;
+        await route.fulfill({
+          status: 503,
+          contentType: 'application/json',
+          body: JSON.stringify({ message: 'deterministic detail failure' }),
+        });
+        return;
+      }
+      const body = (route.request().postDataJSON() ?? {}) as {
+        p_product_id?: string;
+      };
+      const productId = body.p_product_id;
+      const product = discoverProducts.find((p) => p.product_id === productId);
+      const detailProduct = product
+        ? {
+            id: product.product_id,
+            name: product.name,
+            brand: product.brand,
+            category: product.category,
+            subcategory: options.partialProductMetadata
+              ? null
+              : product.subcategory,
+            description: options.partialProductMetadata
+              ? null
+              : `Curated catalog fixture ${product.position}.`,
+            image_urls: product.image_urls,
+            image_metadata: product.image_metadata,
+            price_amount: options.partialProductMetadata
+              ? null
+              : product.price_amount,
+            price_currency: options.partialProductMetadata
+              ? null
+              : product.price_currency,
+            attributes: {
+              style_tags: ['minimal'],
+              color: 'ink',
+              season: ['all season'],
+              fit: 'regular',
+              occasion_tags: ['going_out'],
+              materials: ['cotton'],
+            },
+            slot_eligibility: [
+              product.category === 'accessory'
+                ? 'layer_or_accessory'
+                : product.category,
+            ],
+            is_active: true,
+            catalog_version: product.catalog_version,
+          }
+        : null;
+      await route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify(detailProduct ? [detailProduct] : []),
+      });
+      return;
+    }
+
     if (url.pathname === '/rest/v1/rpc/record_qualified_feed_position') {
       const body = (route.request().postDataJSON() ?? {}) as {
         p_session_id: string;
@@ -334,6 +420,15 @@ export async function mockAnonymousIdentity(
     }
 
     if (url.pathname === '/rest/v1/rpc/save_product') {
+      if (mutationErrorRemaining > 0) {
+        mutationErrorRemaining -= 1;
+        await route.fulfill({
+          status: 503,
+          contentType: 'application/json',
+          body: JSON.stringify({ message: 'deterministic mutation failure' }),
+        });
+        return;
+      }
       const body = (route.request().postDataJSON() ?? {}) as {
         p_product_id: string;
         p_operation_id: string;
@@ -359,6 +454,15 @@ export async function mockAnonymousIdentity(
     }
 
     if (url.pathname === '/rest/v1/rpc/remove_product') {
+      if (mutationErrorRemaining > 0) {
+        mutationErrorRemaining -= 1;
+        await route.fulfill({
+          status: 503,
+          contentType: 'application/json',
+          body: JSON.stringify({ message: 'deterministic mutation failure' }),
+        });
+        return;
+      }
       const body = (route.request().postDataJSON() ?? {}) as {
         saved_product_id: string;
         operation_id: string;

@@ -1,0 +1,478 @@
+/* ─── Page shell ────────────────────────────────────────────────────────────── */
+
+.page {
+  min-height: 100vh;
+  min-height: 100dvh;
+  background: var(--color-surface-primary);
+}
+
+/* ─── Top bar ────────────────────────────────────────────────────────────────── */
+
+.topBar {
+  position: sticky;
+  top: 0;
+  z-index: var(--z-index-sticky, 10);
+  display: flex;
+  align-items: center;
+  padding: calc(var(--safe-area-top) + var(--space-3)) var(--layout-gutter)
+    var(--space-3);
+  border-bottom: var(--border-width-thin) solid var(--color-border-subtle);
+  background: var(--color-surface-primary);
+}
+
+.backButton {
+  display: inline-flex;
+  min-height: var(--size-touch-target-min);
+  align-items: center;
+  gap: var(--space-2);
+  border: 0;
+  border-radius: var(--radius-sm);
+  background: transparent;
+  color: var(--color-text-primary);
+  font-size: var(--font-size-label);
+  font-weight: var(--font-weight-semibold);
+  line-height: var(--line-height-label);
+  cursor: pointer;
+  transition: opacity var(--motion-duration-fast) var(--motion-easing-standard);
+}
+
+.backButton:hover {
+  opacity: 0.7;
+}
+
+.backButton:active {
+  opacity: 0.5;
+}
+
+/* ─── Content layout ─────────────────────────────────────────────────────────── */
+
+.content {
+  max-width: var(--width-content-max);
+  margin-inline: auto;
+  padding-inline: var(--layout-gutter);
+  padding-block-end: calc(var(--space-10) + var(--safe-area-bottom));
+}
+
+/* ─── Gallery ────────────────────────────────────────────────────────────────── */
+
+.gallery {
+  display: grid;
+  gap: var(--space-2);
+  margin-block-end: var(--space-6);
+}
+
+.primaryImageFrame {
+  position: relative;
+  overflow: hidden;
+  border-radius: var(--radius-sm);
+  background: var(--color-surface-subtle);
+}
+
+.primaryImage {
+  object-fit: cover;
+  width: 100%;
+  height: 100%;
+}
+
+.imageFailure {
+  display: flex;
+  width: 100%;
+  height: 100%;
+  min-height: 20rem;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-3);
+  padding: var(--space-6);
+  background:
+    linear-gradient(
+      135deg,
+      transparent 0 46%,
+      var(--color-border-subtle) 46% 54%,
+      transparent 54% 100%
+    ),
+    var(--color-surface-subtle);
+  color: var(--color-text-secondary);
+  text-align: center;
+}
+
+.thumbnailRow {
+  display: flex;
+  gap: var(--space-2);
+  overflow-x: auto;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+
+.thumbnailRow::-webkit-scrollbar {
+  display: none;
+}
+
+.thumbnailButton {
+  flex-shrink: 0;
+  width: 5rem;
+  height: 5rem;
+  border: var(--border-width-thin) solid var(--color-border-subtle);
+  border-radius: var(--radius-xs);
+  background: var(--color-surface-subtle);
+  overflow: hidden;
+  cursor: pointer;
+  transition: border-color var(--motion-duration-fast)
+    var(--motion-easing-standard);
+}
+
+.thumbnailButton[aria-selected='true'] {
+  border-color: var(--color-text-primary);
+  border-width: 2px;
+}
+
+.thumbnailImage {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.mobileGallery {
+  display: flex;
+  overflow-x: auto;
+  scroll-snap-type: x mandatory;
+  scrollbar-width: none;
+}
+
+.mobileGallery::-webkit-scrollbar {
+  display: none;
+}
+
+.mobileSlide {
+  position: relative;
+  flex: 0 0 100%;
+  aspect-ratio: 4 / 5;
+  overflow: hidden;
+  scroll-snap-align: start;
+  border-radius: var(--radius-sm);
+  background: var(--color-surface-subtle);
+}
+
+.galleryStatus {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+}
+
+.gallery:has(.mobileGallery) > .primaryImageFrame {
+  display: none;
+}
+
+/* ─── Product info ───────────────────────────────────────────────────────────── */
+
+.info {
+  display: grid;
+  gap: var(--space-5);
+}
+
+.header {
+  display: grid;
+  gap: var(--space-2);
+}
+
+.eyebrow {
+  color: var(--color-text-secondary);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.nameRow {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--space-4);
+}
+
+.productName {
+  flex: 1;
+  min-width: 0;
+}
+
+.saveButton {
+  flex-shrink: 0;
+  display: grid;
+  width: var(--size-touch-target-min);
+  height: var(--size-touch-target-min);
+  place-items: center;
+  border: var(--border-width-thin) solid var(--color-border-strong);
+  border-radius: var(--radius-pill);
+  background: var(--color-surface-raised);
+  color: var(--color-text-primary);
+  box-shadow: var(--elevation-1);
+  cursor: pointer;
+  transition:
+    transform var(--motion-duration-fast) var(--motion-easing-standard),
+    background-color var(--motion-duration-fast) var(--motion-easing-standard),
+    color var(--motion-duration-fast) var(--motion-easing-standard);
+}
+
+.saveButton[aria-pressed='true'] {
+  background: var(--color-surface-inverse);
+  color: var(--color-text-inverse);
+  border-color: var(--color-surface-inverse);
+}
+
+.saveButton:active {
+  transform: scale(var(--motion-scale-pressed));
+}
+
+.saveButton:disabled {
+  cursor: wait;
+  opacity: 0.7;
+}
+
+.price {
+  color: var(--color-text-primary);
+}
+
+.categoryRow {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+}
+
+.tag {
+  display: inline-flex;
+  align-items: center;
+  padding: var(--space-1) var(--space-3);
+  border: var(--border-width-thin) solid var(--color-border-subtle);
+  border-radius: var(--radius-pill);
+  font-size: var(--font-size-caption);
+  font-weight: var(--font-weight-medium);
+  line-height: var(--line-height-caption);
+  text-transform: capitalize;
+  color: var(--color-text-secondary);
+}
+
+.description {
+  color: var(--color-text-secondary);
+}
+
+/* ─── Attributes ─────────────────────────────────────────────────────────────── */
+
+.attributes {
+  display: grid;
+  gap: var(--space-3);
+  padding: var(--space-5);
+  border: var(--border-width-thin) solid var(--color-border-subtle);
+  border-radius: var(--radius-sm);
+  background: var(--color-surface-subtle);
+}
+
+.attributeRow {
+  display: flex;
+  gap: var(--space-3);
+  align-items: flex-start;
+}
+
+.attributeLabel {
+  min-width: 6rem;
+  flex-shrink: 0;
+  color: var(--color-text-secondary);
+  font-size: var(--font-size-caption);
+  font-weight: var(--font-weight-medium);
+  line-height: var(--line-height-caption);
+  text-transform: capitalize;
+}
+
+.attributeValue {
+  color: var(--color-text-primary);
+  font-size: var(--font-size-caption);
+  line-height: var(--line-height-caption);
+  text-transform: capitalize;
+}
+
+/* ─── Save error ─────────────────────────────────────────────────────────────── */
+
+.saveError {
+  display: block;
+  color: var(--color-status-error);
+  font-size: var(--font-size-caption);
+}
+
+/* ─── Undo toast ─────────────────────────────────────────────────────────────── */
+
+.undoToast {
+  position: fixed;
+  inset-inline: var(--layout-gutter);
+  inset-block-end: calc(
+    var(--size-navigation-bottom) + var(--safe-area-bottom) + var(--space-4)
+  );
+  z-index: var(--z-index-toast);
+  display: flex;
+  width: fit-content;
+  max-width: calc(100% - (2 * var(--layout-gutter)));
+  min-height: var(--size-touch-target-min);
+  align-items: center;
+  gap: var(--space-4);
+  margin-inline: auto;
+  padding: var(--space-3) var(--space-4);
+  border-radius: var(--radius-sm);
+  background: var(--color-surface-inverse);
+  color: var(--color-text-inverse);
+  box-shadow: var(--elevation-2);
+  font-size: var(--font-size-body-sm);
+}
+
+.undoToast button {
+  min-width: var(--size-touch-target-min);
+  min-height: var(--size-touch-target-min);
+  border: 0;
+  background: transparent;
+  color: inherit;
+  font-weight: var(--font-weight-semibold);
+  text-decoration: underline;
+  cursor: pointer;
+}
+
+/* ─── Loading skeleton ───────────────────────────────────────────────────────── */
+
+.skeleton {
+  display: grid;
+  gap: var(--space-5);
+  padding: var(--space-5) var(--layout-gutter)
+    calc(var(--space-10) + var(--safe-area-bottom));
+  max-width: var(--width-content-max);
+  margin-inline: auto;
+}
+
+.skeletonHero,
+.skeletonLine,
+.skeletonLineShort,
+.skeletonBlock {
+  display: block;
+  border-radius: var(--radius-xs);
+  background: var(--color-surface-subtle);
+  animation: skeleton var(--motion-duration-skeleton)
+    var(--motion-easing-standard) infinite alternate;
+}
+
+.skeletonHero {
+  aspect-ratio: 4 / 5;
+  max-height: 32rem;
+  width: 100%;
+}
+
+.skeletonLine {
+  width: 45%;
+  height: 0.875rem;
+}
+
+.skeletonLineShort {
+  width: 70%;
+  height: 1.5rem;
+}
+
+.skeletonBlock {
+  width: 100%;
+  height: 5rem;
+}
+
+/* ─── State messages ─────────────────────────────────────────────────────────── */
+
+.stateMessage {
+  display: grid;
+  max-width: 36rem;
+  gap: var(--space-4);
+  margin: var(--space-12) auto;
+  padding: var(--space-8) var(--layout-gutter);
+  text-align: center;
+}
+
+.stateActions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-3);
+  margin-block-start: var(--space-2);
+}
+
+.stateBody {
+  color: var(--color-text-secondary);
+}
+
+.secondaryAction {
+  display: inline-flex;
+  min-height: var(--size-touch-target-min);
+  align-items: center;
+  padding: var(--space-2) var(--space-4);
+  border: var(--border-width-thin) solid var(--color-border-strong);
+  border-radius: var(--radius-sm);
+  font-size: var(--font-size-label);
+  font-weight: var(--font-weight-semibold);
+  text-decoration: none;
+  color: var(--color-text-primary);
+}
+
+/* ─── Responsive: two-column on desktop ──────────────────────────────────────── */
+
+@media (min-width: 75rem) {
+  .content {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: var(--space-12);
+    align-items: start;
+    padding-block-start: var(--space-4);
+  }
+
+  .gallery {
+    position: sticky;
+    top: calc(var(--size-touch-target-min) + var(--space-6) + var(--space-3));
+    grid-template-columns: 5rem minmax(0, 1fr);
+    margin-block-end: 0;
+  }
+
+  .gallery:has(.mobileGallery) > .primaryImageFrame {
+    display: block;
+    grid-column: 2;
+  }
+
+  .mobileGallery {
+    display: none;
+  }
+
+  .thumbnailRow {
+    grid-column: 1;
+    grid-row: 1;
+    flex-direction: column;
+    overflow: visible;
+  }
+
+  .undoToast {
+    inset-inline-start: calc(
+      var(--size-navigation-rail) + var(--layout-gutter)
+    );
+    inset-inline-end: auto;
+    inset-block-end: var(--space-6);
+  }
+}
+
+/* ─── Skeleton animation ─────────────────────────────────────────────────────── */
+
+@keyframes skeleton {
+  from {
+    opacity: 0.62;
+  }
+
+  to {
+    opacity: 1;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .skeletonHero,
+  .skeletonLine,
+  .skeletonLineShort,
+  .skeletonBlock {
+    animation: none;
+  }
+}

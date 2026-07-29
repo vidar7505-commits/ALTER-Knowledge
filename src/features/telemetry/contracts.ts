@@ -258,7 +258,7 @@ const propertySchemas = {
   product_detail_opened: z.strictObject({
     product_id: z.uuid(),
     product_category: identifier,
-    source_surface: sourceSurface,
+    source_surface: sourceSurface.nullable(),
     source_feed_position: positiveInteger.nullable(),
     is_saved: z.boolean(),
   }),
