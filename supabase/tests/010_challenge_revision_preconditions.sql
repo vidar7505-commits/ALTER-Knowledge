@@ -721,8 +721,8 @@ select is(
       where challenge_progress_id =
           '91600000-0000-4000-8000-000000000001'
         and slot_id = 'top'
-      order by selected_at desc, id
-      limit 1
+        and removal_operation_id =
+          '92100000-0000-4000-8000-000000000002'
     ),
     5,
     '92100000-0000-4000-8000-000000000002'
@@ -734,8 +734,8 @@ select is(
       where challenge_progress_id =
           '91600000-0000-4000-8000-000000000001'
         and slot_id = 'top'
-      order by selected_at desc, id
-      limit 1
+        and removal_operation_id =
+          '92100000-0000-4000-8000-000000000002'
     ),
     5,
     '92100000-0000-4000-8000-000000000002'
@@ -752,8 +752,8 @@ select throws_ok(
         where challenge_progress_id =
             '91600000-0000-4000-8000-000000000001'
           and slot_id = 'top'
-        order by selected_at desc, id
-        limit 1
+          and removal_operation_id =
+            '92100000-0000-4000-8000-000000000002'
       ),
       6,
       '92100000-0000-4000-8000-000000000002'
