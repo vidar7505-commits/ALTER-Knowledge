@@ -2,11 +2,11 @@
 
 ## Current package
 
-`P15 — Continuation`
+`P16 — Offline / Recovery`
 
 ## Status
 
-Configured but awaiting CI validation
+Ready
 
 P10 remains Complete. P11A remains Complete. P11 remains Complete. P12 remains
 Complete. P13 remains Complete after verified GitHub application validation.
@@ -17,8 +17,9 @@ GitHub Database infrastructure validation. P15B is Complete at commit
 `11bed0f78638f4ed246fdf07d6792dcb744566ed`. P15C is Complete after verified
 GitHub Database infrastructure validation of implementation commit
 `4bee1b5618d798930b6b8665cbb2c45839befe5c` and test-fixture correction commit
-`38494158aba0584d1a5816b3d8c17028d09319d8`. P15 is Configured but awaiting CI
-validation. P16 remains blocked pending P15 closure.
+`38494158aba0584d1a5816b3d8c17028d09319d8`. P15 is Complete after verified
+GitHub Application CI validation of implementation commit
+`d5edf3bf6a66dfd469386b93c0d7586ff7320b3b`. P16 is Ready but not implemented.
 
 P15A adds one forward-only migration correcting only the strict 30-minute
 boundary in `public.ensure_session`. P14A previously added one forward-only
@@ -33,6 +34,19 @@ Production deployment: not run.
 
 ## P15 implementation
 
+- GitHub Application CI passed for implementation commit
+  `d5edf3bf6a66dfd469386b93c0d7586ff7320b3b`
+  (`feat(continuation)`).
+- Format passed.
+- Lint passed with zero warnings/errors.
+- Typecheck passed.
+- Vitest passed: 35 files; 161 tests.
+- Production build passed: 10 routes generated.
+- Full Playwright passed: 65/65; Chromium; one worker.
+- Dedicated P15 Playwright passed: 14/14.
+- Accessibility/axe coverage passed.
+- Process teardown passed with no ALTER-related orphan Node, Next.js, or
+  Playwright process.
 - Resolves at most one continuation cue on Discover entry and only for a
   server-confirmed return session.
 - Applies the frozen priority exactly: active incomplete Challenge with a valid
@@ -71,6 +85,15 @@ Production deployment: not run.
 - Remote reset: not run.
 - Remote migration push: not run.
 - Production deployment: not run.
+
+## P16 definition
+
+- Package: **P16 — Offline / Recovery**
+- Dependencies: P07 and P11–P15
+- Scope: queue, retry, and corrupt-state handling
+- Acceptance: offline and interrupted mutation behavior
+- Commit boundary: `feat(recovery)`
+- Status: Ready but not implemented.
 
 ## P15C implementation
 
@@ -325,6 +348,5 @@ deployment, commit, or push was changed.
 
 ## Next action
 
-Run GitHub application CI for P15 — Continuation. P15 must remain Configured but
-awaiting CI validation until those gates pass. P16 remains blocked pending P15
-closure.
+Begin P16 — Offline / Recovery only under a separately authorized
+implementation task. P15 is Complete. P16 is Ready but not implemented.

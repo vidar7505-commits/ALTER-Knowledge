@@ -7,11 +7,15 @@
 - Branch: `main`.
 - Initial working tree: clean.
 - `origin/main` fetched successfully.
-- Initial local `main` and `origin/main`:
-  `52ec360fb003ba16e866370e6d0f9acbe4a55420`.
+- Local `main` and fetched `origin/main`:
+  `d5edf3bf6a66dfd469386b93c0d7586ff7320b3b`.
+- P15 implementation commit:
+  `d5edf3bf6a66dfd469386b93c0d7586ff7320b3b`
+  (`feat(continuation)`).
 - P15A, P15B, and P15C: Complete.
-- P15: Ready before implementation.
-- P16: blocked pending P15 closure.
+- P15: Complete.
+- P16: Ready but not implemented.
+- No P16 implementation exists.
 - Every required canonical path existed and was read before modification.
 
 ## 2. Canonical inputs
@@ -77,7 +81,10 @@ production-deployment behavior is included.
 The client does not calculate the threshold. It submits the current
 session-candidate UUID. A typed expired-session response causes one retry with a
 new UUID, persists the returned canonical session ID, and clears old Discover
-restoration. Ordinary navigation and same-session reload retain the session.
+restoration. The server session result is authoritative; the client wall clock
+is not domain authority. Ordinary route changes do not create return sessions,
+and same-session reload is not a return. Identity changes invalidate prior
+continuation state. A strict return uses the newly created return session.
 
 ## 5. Candidate inventory
 
@@ -90,7 +97,8 @@ Only these candidates exist:
    saved row.
 
 Discover is never a candidate. No arbitrary history or recommendation candidate
-exists.
+exists. When there is no valid candidate, normal Discover renders without a
+card.
 
 ## 6. Priority resolver
 
@@ -102,6 +110,8 @@ an active catalog product. Definitively absent candidates are excluded.
 A higher-priority query or contract failure rejects the resolution. It never
 falls through to Wardrobe or another lower-priority result. Resolution is
 deduplicated per canonical session and can be explicitly invalidated for retry.
+Resolver failure produces a compact retryable error while Discover remains
+usable.
 
 ## 7. Completed-Challenge first-return rule
 
@@ -109,7 +119,8 @@ The latest owned completion is ordered by `completed_at DESC, id ASC`. It must
 precede the current session start. Owned return sessions beginning after the
 completion are deterministically ordered by `session_number`, then `id`; the
 completion qualifies only when the current session is the first such result.
-No invented duration is used.
+No arbitrary recency duration exists. An active incomplete Challenge outranks a
+completed Challenge.
 
 ## 8. Wardrobe eligibility
 
@@ -126,7 +137,10 @@ Detail restoration retains P11 feed instance, order, cursor, anchor, and scroll
 semantics. A typed expired-session rotation clears session-scoped restoration;
 the new return session then obtains its own feed through the unchanged P11
 boundary. No old feed ID, synthetic cursor, or caller-supplied ownership is
-used.
+used. A strict return receives a new session-bound feed instance; prior-session
+feed ownership is not reused, no fabricated cursor or restoration state is
+created, and cross-session restoration metadata is cleared or ignored. P11
+deterministic feed ordering remains unchanged.
 
 ## 10. Architecture
 
@@ -182,7 +196,8 @@ used.
 The continuation region is inside the existing Discover primary surface,
 between its canonical header and product grid. It creates no route, shell, rail,
 bottom navigation, or duplicate primary navigation. Discover remains usable
-while continuation resolves or fails.
+while continuation resolves or fails. The existing Discover h1 remains
+canonical, and the continuation surface is placed above the Discover grid.
 
 ## 14. Card behavior
 
@@ -198,7 +213,8 @@ Dismiss control. Canonical variants are:
 
 An immediate action lock prevents duplicate activation or dismissal. Activation
 enters a navigating state and uses the canonical `/challenge` or `/wardrobe`
-destination.
+destination. Controls are not nested, and underlying Discover remains visible
+and usable.
 
 ## 15. Consumption state
 
@@ -210,7 +226,10 @@ The strict version-1 record stores matching identity/session UUIDs, `shown`, and
 distinct `dismissed` or `activated` consumption. Malformed or mismatched data is
 ignored safely. Consumption persists through reload in the same identity and
 session; a new identity or return session uses a different key and reevaluates.
-Browser state is never candidate authority.
+Dismissal and successful activation each consume the cue for the current
+identity/session. Browser state is never candidate authority, and telemetry is
+not consumption authority. Storage is versioned, identity-scoped, and
+session-scoped; shown, dismissed, and activated are distinct outcomes.
 
 ## 16. Meaningful-destination integration
 
@@ -220,12 +239,21 @@ After each primary surface reaches its canonical successful viewed state:
 - Wardrobe records `wardrobe`;
 - Challenge active or completed state records `challenge`.
 
+The approved RPC is
+`public.record_meaningful_destination(p_session_id uuid, p_destination text,
+p_operation_id uuid) returns jsonb`, and the approved destinations are
+`discover`, `wardrobe`, and `challenge`.
+
 Each mounted qualified view has a stable operation UUID. The P15C service sends
 only session ID, allowlisted destination, and operation ID, then validates the
 exact result envelope. Strict Mode deduplication uses the stable view operation.
 Errors, including typed stale-session and operation-conflict results, are
 non-destructive. Product Detail, Challenge picker, continuation activation, and
-dismissal perform no destination write.
+dismissal perform no destination write. Navigation clicks alone do not record a
+destination. Stable operation IDs are retained through logical retry. No direct
+`anonymous_users` UPDATE occurs, and the browser supplies no owner or auth-user
+identifier. Product Detail and Challenge picker do not overwrite their parent
+destination, and destination failure does not destroy the primary surface.
 
 ## 17. Telemetry
 
@@ -239,7 +267,10 @@ They use canonical continuation/discover surfaces, cue type, target surface, and
 registered properties. Shown evidence prevents rerender/reload duplication;
 the action lock prevents duplicate selected/dismissed capture. Telemetry errors
 are swallowed and never block card display or navigation. No owner identifiers,
-raw timestamps, or new taxonomy were added.
+raw timestamps, or new taxonomy were added. Viewed is emitted once per canonical
+display; selected and dismissed are each emitted once. Stable event IDs survive
+retry. Navigation does not wait for telemetry. Telemetry is evidence, not state
+authority.
 
 ## 18. State model
 
@@ -266,7 +297,10 @@ Identity/session changes therefore invalidate prior work. Per-session in-flight
 resolution is shared through the service. A synchronous action lock guards
 rapid actions before React updates. Stable view and destination operation IDs
 make Strict Mode replay safe. There are no polling loops, background retries,
-or uncleaned event listeners.
+or uncleaned event listeners. Request-version cancellation rejects stale
+identity, session, and candidate responses; route leave prevents unsafe state
+application. Rapid double activation produces one navigation, and rapid double
+dismissal produces one consumption action. No orphan retry loop remains.
 
 ## 20. Error and recovery
 
@@ -277,6 +311,13 @@ offers retry for resolver failures. Retry invalidates only the cached
 resolution. Destination and telemetry failures remain invisible and
 non-destructive to a successfully loaded primary surface.
 
+The state model distinguishes same session/no continuation, no candidate,
+resolver query failure, malformed resolver contract, stale destination session,
+destination operation conflict, destination-write failure, telemetry failure,
+and malformed browser storage. Resolver failure never fabricates or falls
+through to a lower-priority candidate, and raw database or Supabase errors are
+not rendered.
+
 ## 21. Accessibility
 
 The existing Discover h1 remains first. The card uses a semantic h2 and named
@@ -284,6 +325,8 @@ section, explicit action labels, no nested controls, non-color status text,
 44px minimum controls, and visible focus. The resolver error uses alert
 semantics. Card insertion does not move focus or reorder the underlying
 Discover grid. Automated axe coverage reports no structural violations.
+Recoverable resolver failure uses alert semantics, and reduced-motion
+preferences are respected.
 
 ## 22. Keyboard
 
@@ -335,6 +378,11 @@ source-aware Challenge navigation and direct-entry Product Detail telemetry
 assertions retain their exact outcomes with bounded cold-compilation/hydration
 allowances for the expanded local one-worker suite.
 
+`tests/e2e/product-detail.spec.ts` received only that bounded
+cold-compilation/hydration allowance required by the expanded one-worker suite.
+Product Detail assertions and behavior expectations were not weakened, and
+same-session Product Detail → Discover restoration remains covered.
+
 ## 27. Visual certification
 
 The dedicated deterministic visual suite certified every required state at all
@@ -370,13 +418,13 @@ no horizontal overflow, card/grid separation, stable reserved geometry, and
 mobile bottom-navigation or desktop-rail clearance. Manual contact-sheet review
 of every viewport confirmed readable copy, responsive stacking, safe-area
 clearance, no shell duplication, no card/grid collision, and no excessive glass
-effect.
+treatment or other unsupported glass treatment.
 
-Certification found one reduced-motion defect: continuation controls retained
-their short transition. The continuation stylesheet now disables animation and
-transition on the card, error surface, and their controls under
+Certification found one reduced-motion defect: residual short transitions
+remained on continuation controls. The final continuation rule disables relevant
+card, error-surface, and control animations and transitions under
 `prefers-reduced-motion: reduce`. The focused visual suite passed 6/6 after the
-correction.
+correction, and the behavior is regression-tested.
 
 ## 28. Validation results
 
@@ -405,9 +453,23 @@ processes. No ALTER-related Next.js or Playwright process remained.
 
 ## 31. CI status
 
-P15 status: **Configured but awaiting CI validation**.
+P15 status: **Complete**.
 
-P15 must not be marked Complete until GitHub application CI passes.
+GitHub Application CI passed for implementation commit
+`d5edf3bf6a66dfd469386b93c0d7586ff7320b3b`
+(`feat(continuation)`):
+
+- Format passed.
+- Lint passed with zero warnings/errors.
+- Typecheck passed.
+- Vitest passed: 35 files; 161 tests.
+- Production build passed: 10 routes generated.
+- Full Playwright passed: 65/65; Chromium; one worker.
+- Dedicated P15 Playwright passed: 14/14.
+- Accessibility/axe coverage passed.
+- P15 visual certification passed.
+- Process teardown passed with no ALTER-related orphan Node, Next.js, or
+  Playwright process.
 
 ## 32. Cloud status
 
@@ -451,8 +513,14 @@ deployment, or P16 recovery queue was added.
 ## 36. Deferred P16 work
 
 Offline mutation queues, retry orchestration, corrupt-state recovery beyond
-P15’s safe parsing, and interrupted-mutation recovery remain P16 scope. P16
-remains blocked pending P15 closure.
+P15’s safe parsing, and interrupted-mutation recovery remain P16 scope.
+
+- Package: **P16 — Offline / Recovery**
+- Dependencies: P07 and P11–P15
+- Scope: queue, retry, and corrupt-state handling
+- Acceptance: offline and interrupted mutation behavior
+- Commit boundary: `feat(recovery)`
+- Status: Ready but not implemented.
 
 ## 37. Exact changed-file inventory
 
@@ -495,4 +563,4 @@ Modified:
 
 ## 38. Suggested commit message
 
-`feat(continuation)`
+`docs(implementation): close P15 and ready P16`
