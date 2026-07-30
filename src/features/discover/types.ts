@@ -127,6 +127,7 @@ export type SavedProductState = {
 
 export type DiscoverErrorCode =
   | 'transport_unavailable'
+  | 'session_expired'
   | 'session_contract_invalid'
   | 'feed_contract_invalid'
   | 'batch_contract_invalid'

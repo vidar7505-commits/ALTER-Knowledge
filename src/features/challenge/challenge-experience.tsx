@@ -17,8 +17,12 @@ import {
   Text,
   VisuallyHidden,
 } from '@/components/design-system/primitives';
+import type { MeaningfulDestinationService } from '@/features/continuation/destination';
+import { createBrowserMeaningfulDestinationService } from '@/features/continuation/destination-supabase';
+import { ensureCanonicalSession } from '@/features/continuation/session';
 import { getSessionCandidateId } from '@/features/discover/storage';
 import { useAnonymousIdentity } from '@/features/identity/identity-provider';
+import { WardrobeError } from '@/features/wardrobe/types';
 
 import type { ChallengeService } from './service';
 import { createBrowserChallengeService } from './supabase';
@@ -69,9 +73,11 @@ function loadingState() {
 export function ChallengeExperience({
   forcedService,
   forcedTelemetry,
+  forcedDestinationService,
 }: {
   forcedService?: ChallengeService;
   forcedTelemetry?: ChallengeTelemetry;
+  forcedDestinationService?: MeaningfulDestinationService;
 } = {}) {
   const identity = useAnonymousIdentity();
   const identityId =
@@ -80,6 +86,12 @@ export function ChallengeExperience({
   const service = useMemo(
     () => forcedService ?? createBrowserChallengeService(),
     [forcedService],
+  );
+  const destinationService = useMemo(
+    () =>
+      forcedDestinationService ??
+      (forcedService ? null : createBrowserMeaningfulDestinationService()),
+    [forcedDestinationService, forcedService],
   );
   const [state, setState] = useState<ChallengeViewState>({
     status: 'resolving_identity',
@@ -97,6 +109,7 @@ export function ChallengeExperience({
   const mutationLocks = useRef(new Set<string>());
   const telemetry = useRef<ChallengeTelemetry | null>(forcedTelemetry ?? null);
   const pageViewId = useRef(globalThis.crypto.randomUUID());
+  const destinationOperationId = useRef(globalThis.crypto.randomUUID());
   const slotRefs = useRef(new Map<CatalogSlotId, HTMLButtonElement>());
   const noticeRef = useRef<HTMLDivElement>(null);
 
@@ -111,11 +124,20 @@ export function ChallengeExperience({
       await Promise.resolve();
       setState({ status: 'loading' });
       const platform = window.innerWidth < 768 ? 'web_mobile' : 'web_desktop';
-      const session = await service.ensureSession({
-        sessionId: getSessionCandidateId(),
-        appVersion: '0.1.0',
-        platform,
-      });
+      const ensureSession = (sessionId: string) =>
+        service.ensureSession({
+          sessionId,
+          appVersion: '0.1.0',
+          platform,
+        });
+      const session = forcedService
+        ? await ensureSession(getSessionCandidateId())
+        : await ensureCanonicalSession(
+            ensureSession,
+            (error) =>
+              error instanceof WardrobeError &&
+              error.code === 'session_expired',
+          );
       const snapshot = await service.recover(id, CHALLENGE_ID);
       if (version !== requestVersion.current) return;
       telemetry.current =
@@ -149,6 +171,13 @@ export function ChallengeExperience({
             required_slot_count: snapshot.definition.required_slots.length,
           },
         });
+        void destinationService
+          ?.record({
+            sessionId: session.session_id,
+            destination: 'challenge',
+            operationId: destinationOperationId.current,
+          })
+          .catch(() => undefined);
       }
       setTasks({});
       setState({
@@ -164,7 +193,7 @@ export function ChallengeExperience({
         requestAnimationFrame(() => noticeRef.current?.focus());
       }
     },
-    [forcedTelemetry, service],
+    [destinationService, forcedService, forcedTelemetry, service],
   );
 
   useEffect(() => {

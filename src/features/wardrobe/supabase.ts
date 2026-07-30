@@ -12,6 +12,17 @@ import { WardrobeError } from './types';
 type DatabaseError = { code?: string; message: string };
 
 function mapError(error: DatabaseError): WardrobeError {
+  if (
+    error.code === '22023' &&
+    error.message.toLowerCase().includes('session has expired')
+  ) {
+    return new WardrobeError(
+      'session_expired',
+      true,
+      'The previous session has ended.',
+      { cause: error },
+    );
+  }
   if (error.code === '22023' || error.code === '23514') {
     return new WardrobeError(
       'operation_conflict',

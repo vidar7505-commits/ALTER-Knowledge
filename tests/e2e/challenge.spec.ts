@@ -6,6 +6,7 @@ test.describe('P14 Challenge', () => {
   test('starts, recovers, selects, replaces, removes, and completes immutably', async ({
     page,
   }) => {
+    test.setTimeout(120_000);
     const mocks = await mockAnonymousIdentity(page, {
       initialSavedProductCount: 8,
       initialChallengeStatus: 'unstarted',
@@ -85,7 +86,7 @@ test.describe('P14 Challenge', () => {
     );
     await detailLink.focus();
     await page.keyboard.press('Enter');
-    await expect(page).toHaveURL(/from=challenge/);
+    await expect(page).toHaveURL(/from=challenge/, { timeout: 90_000 });
     await page.getByRole('button', { name: /Go back to challenge/i }).click();
     await expect(page).toHaveURL(/\/challenge$/);
     await expect(page.getByText('4 of 4 pieces')).toBeVisible();

@@ -12,6 +12,17 @@ import { DiscoverError } from './types';
 type RpcError = { code?: string; message: string };
 
 function mapError(error: RpcError): DiscoverError {
+  if (
+    error.code === '22023' &&
+    error.message.toLowerCase().includes('session has expired')
+  ) {
+    return new DiscoverError(
+      'session_expired',
+      true,
+      'The previous session has ended.',
+      { cause: error },
+    );
+  }
   if (error.code === '22023' || error.code === '23514') {
     return new DiscoverError(
       'operation_conflict',

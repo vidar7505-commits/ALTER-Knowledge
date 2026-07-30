@@ -293,3 +293,6 @@
     animation: none;
   }
 }
+.continuationSlot {
+  min-height: 11rem;
+}

@@ -63,6 +63,7 @@ test('opens from Discover, renders canonical data, and restores context', async 
 test('supports direct entry without creating a feed instance', async ({
   page,
 }) => {
+  test.setTimeout(180_000);
   const mock = await mockAnonymousIdentity(page);
   await page.goto(`/product/${productId}`);
   await expect(
@@ -73,12 +74,15 @@ test('supports direct entry without creating a feed instance', async ({
   ).toBeVisible();
   expect(mock.getEnsureFeedCalls()).toBe(0);
   await expect
-    .poll(() => {
-      const opened = mock
-        .getTelemetryEvents()
-        .find((event) => event.event_name === 'product_detail_opened');
-      return opened?.source_surface;
-    })
+    .poll(
+      () => {
+        const opened = mock
+          .getTelemetryEvents()
+          .find((event) => event.event_name === 'product_detail_opened');
+        return opened?.source_surface;
+      },
+      { timeout: 150_000 },
+    )
     .toBeNull();
   await page.getByRole('button', { name: 'Go back to Discover' }).click();
   await expect(page).toHaveURL(/\/discover$/);

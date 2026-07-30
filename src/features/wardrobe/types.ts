@@ -33,6 +33,7 @@ export type WardrobeItem = {
 
 export type WardrobeErrorCode =
   | 'transport_unavailable'
+  | 'session_expired'
   | 'query_contract_invalid'
   | 'product_contract_invalid'
   | 'session_contract_invalid'

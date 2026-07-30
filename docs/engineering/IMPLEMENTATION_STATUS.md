@@ -6,7 +6,7 @@
 
 ## Status
 
-Ready
+Configured but awaiting CI validation
 
 P10 remains Complete. P11A remains Complete. P11 remains Complete. P12 remains
 Complete. P13 remains Complete after verified GitHub application validation.
@@ -17,8 +17,8 @@ GitHub Database infrastructure validation. P15B is Complete at commit
 `11bed0f78638f4ed246fdf07d6792dcb744566ed`. P15C is Complete after verified
 GitHub Database infrastructure validation of implementation commit
 `4bee1b5618d798930b6b8665cbb2c45839befe5c` and test-fixture correction commit
-`38494158aba0584d1a5816b3d8c17028d09319d8`. P15 is Ready. P16 remains blocked
-pending P15 closure.
+`38494158aba0584d1a5816b3d8c17028d09319d8`. P15 is Configured but awaiting CI
+validation. P16 remains blocked pending P15 closure.
 
 P15A adds one forward-only migration correcting only the strict 30-minute
 boundary in `public.ensure_session`. P14A previously added one forward-only
@@ -30,6 +30,47 @@ Remote reset: not run.
 Remote migration push: not run.
 Remote seed push: not run.
 Production deployment: not run.
+
+## P15 implementation
+
+- Resolves at most one continuation cue on Discover entry and only for a
+  server-confirmed return session.
+- Applies the frozen priority exactly: active incomplete Challenge with a valid
+  selection; latest completion in its first later return session; meaningful,
+  non-empty Wardrobe; otherwise normal Discover with no card.
+- Treats Discover only as the no-card fallback. A strict return rotates an
+  expired session candidate, clears prior Discover restoration, and obtains the
+  new session-bound feed without reusing a prior-session feed.
+- Renders the canonical non-modal, dismissible card above the Discover grid,
+  with one destination action and a compact retryable resolver-error surface.
+- Stores shown and distinct dismissed/activated state under the versioned,
+  identity-and-session-scoped key
+  `alter:continuation:v1:<anonymous-user-id>:<session-id>`.
+- Records qualified primary Discover, Wardrobe, and Challenge views through
+  `public.record_meaningful_destination(uuid,text,uuid)`. Product Detail,
+  Challenge picker, dismissal, and activation do not write a destination.
+- Uses only registered continuation telemetry events. Resolver, destination,
+  and telemetry failures never replace or block the underlying primary surface.
+- Adds deterministic unit/component coverage and a dedicated one-worker
+  Playwright suite, including strict session modes, priority, consumption,
+  destination recording, resolver recovery, accessibility, and the five
+  canonical viewports.
+- Completed visual certification for all 15 required state rows at 320×700,
+  390×844, 768×1024, 1200×900, and 1440×1024. The 14 distinct rendered states
+  produced 70 viewport artifacts because the Wardrobe artifact also represents
+  the canonical long-copy state. Automated geometry, overflow, shell,
+  touch-target, focus, and reduced-motion assertions passed; manual
+  contact-sheet inspection passed at every viewport.
+- Corrected the continuation reduced-motion rule so the card, error surface,
+  and their controls disable animation and transition when reduced motion is
+  requested.
+- Database changes: None.
+- New migrations: None.
+- Cloud migrations deployed: None.
+- Hosted development schema updated: No.
+- Remote reset: not run.
+- Remote migration push: not run.
+- Production deployment: not run.
 
 ## P15C implementation
 
@@ -284,7 +325,6 @@ deployment, commit, or push was changed.
 
 ## Next action
 
-Begin P15 — Continuation. Its effective dependencies are P11, P13, P14, P15A,
-P15B, and P15C; scope is return priority and the continuation card; acceptance
-is a strictly greater-than-30-minute return E2E; and its commit boundary is
-`feat(continuation)`. P16 remains blocked pending P15 closure.
+Run GitHub application CI for P15 — Continuation. P15 must remain Configured but
+awaiting CI validation until those gates pass. P16 remains blocked pending P15
+closure.

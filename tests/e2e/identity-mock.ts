@@ -5,6 +5,8 @@ const anonymousUserId = '10000000-0000-4000-8000-000000000091';
 const wardrobeId = '20000000-0000-4000-8000-000000000091';
 const sessionId = '30000000-0000-4000-8000-000000000091';
 const feedInstanceId = '50000000-0000-4000-8000-000000000091';
+const returnSessionId = '30000000-0000-4000-8000-000000000092';
+const returnFeedInstanceId = '50000000-0000-4000-8000-000000000092';
 const now = '2026-07-24T12:00:00.000Z';
 const nextCursor = `lr001-feed-cursor-v1.${'a'.repeat(64)}`;
 const productImage =
@@ -83,6 +85,10 @@ export async function mockAnonymousIdentity(
     challengeRevisionMismatchOnce?: boolean;
     challengeRevisionMismatchAction?: 'select' | 'remove' | 'complete';
     challengeOperationConflictOnce?: boolean;
+    sessionMode?: 'first' | 'same' | 'exact' | 'return';
+    lastMeaningfulDestination?: 'discover' | 'wardrobe' | 'challenge';
+    continuationQueryErrorOnce?: boolean;
+    destinationWriteErrorOnce?: boolean;
   } = {},
 ) {
   let onboardingStatus =
@@ -113,6 +119,12 @@ export async function mockAnonymousIdentity(
   let challengeProductErrors = options.challengeProductErrorOnce ? 1 : 0;
   let challengeRevisionErrors = options.challengeRevisionMismatchOnce ? 1 : 0;
   let challengeConflictErrors = options.challengeOperationConflictOnce ? 1 : 0;
+  let continuationQueryFailing = options.continuationQueryErrorOnce ?? false;
+  let destinationWriteErrors = options.destinationWriteErrorOnce ? 1 : 0;
+  let ensureSessionRequests = 0;
+  let continuationRequests = 0;
+  let activeSessionId = sessionId;
+  const destinationWrites: Array<Record<string, unknown>> = [];
   const challengeSelections = new Map<
     string,
     { id: string; productId: string; selectedAt: string }
@@ -299,17 +311,34 @@ export async function mockAnonymousIdentity(
     }
 
     if (url.pathname === '/rest/v1/rpc/ensure_session') {
+      ensureSessionRequests += 1;
       const body = (route.request().postDataJSON() ?? {}) as {
         p_session_id?: string;
       };
+      if (options.sessionMode === 'return' && ensureSessionRequests === 1) {
+        await route.fulfill({
+          status: 400,
+          contentType: 'application/json',
+          body: JSON.stringify({
+            code: '22023',
+            message: 'session has expired',
+          }),
+        });
+        return;
+      }
+      activeSessionId =
+        options.sessionMode === 'return'
+          ? returnSessionId
+          : (body.p_session_id ?? sessionId);
       await route.fulfill({
         status: 200,
         contentType: 'application/json',
         body: JSON.stringify({
-          session_id: body.p_session_id ?? sessionId,
-          session_number: 1,
-          is_return_session: false,
-          started_at: now,
+          session_id: activeSessionId,
+          session_number: options.sessionMode === 'return' ? 2 : 1,
+          is_return_session: options.sessionMode === 'return',
+          started_at:
+            options.sessionMode === 'return' ? '2026-07-24T12:31:00.000Z' : now,
         }),
       });
       return;
@@ -317,11 +346,15 @@ export async function mockAnonymousIdentity(
 
     if (url.pathname === '/rest/v1/rpc/ensure_feed_instance') {
       ensureFeedCalls += 1;
+      const activeFeedId =
+        activeSessionId === returnSessionId
+          ? returnFeedInstanceId
+          : feedInstanceId;
       await route.fulfill({
         status: 200,
         contentType: 'application/json',
         body: JSON.stringify({
-          feed_instance_id: feedInstanceId,
+          feed_instance_id: activeFeedId,
           last_cursor:
             loadedCount > 0 && loadedCount < productCount ? nextCursor : null,
           max_loaded_position: loadedCount,
@@ -379,7 +412,10 @@ export async function mockAnonymousIdentity(
         status: 200,
         contentType: 'application/json',
         body: JSON.stringify({
-          feed_instance_id: feedInstanceId,
+          feed_instance_id:
+            activeSessionId === returnSessionId
+              ? returnFeedInstanceId
+              : feedInstanceId,
           batch_number: isInitial ? 1 : 2,
           returned_count: products.length,
           next_cursor: isExhausted ? null : nextCursor,
@@ -503,25 +539,49 @@ export async function mockAnonymousIdentity(
     }
 
     if (url.pathname === '/rest/v1/challenge_progress') {
+      continuationRequests += 1;
+      if (continuationQueryFailing) {
+        await route.fulfill({
+          status: 400,
+          contentType: 'application/json',
+          body: JSON.stringify({
+            code: 'PGRST500',
+            message: 'continuation resolver failure',
+          }),
+        });
+        return;
+      }
+      const continuationShape = url.searchParams.get('select') === 'id,status';
       await route.fulfill({
         status: 200,
         contentType: 'application/json',
         body: JSON.stringify(
-          challengeStatus === 'unstarted'
+          challengeStatus === 'unstarted' ||
+            (continuationShape && challengeStatus === 'completed')
             ? []
             : [
-                {
-                  id: challengeProgressId,
-                  challenge_id: challengeId,
-                  status:
-                    challengeStatus === 'completed'
-                      ? 'completed'
-                      : challengeSelections.size === 4
-                        ? 'ready_to_complete'
-                        : 'in_progress',
-                  started_at: now,
-                  state_revision: challengeRevision,
-                },
+                continuationShape
+                  ? {
+                      id: challengeProgressId,
+                      status:
+                        challengeStatus === 'completed'
+                          ? 'completed'
+                          : challengeSelections.size === 4
+                            ? 'ready_to_complete'
+                            : 'in_progress',
+                    }
+                  : {
+                      id: challengeProgressId,
+                      challenge_id: challengeId,
+                      status:
+                        challengeStatus === 'completed'
+                          ? 'completed'
+                          : challengeSelections.size === 4
+                            ? 'ready_to_complete'
+                            : 'in_progress',
+                      started_at: now,
+                      state_revision: challengeRevision,
+                    },
               ],
         ),
       });
@@ -529,23 +589,32 @@ export async function mockAnonymousIdentity(
     }
 
     if (url.pathname === '/rest/v1/challenge_progress_items') {
+      const continuationShape =
+        url.searchParams.get('select') === 'slot_id,product_id';
       await route.fulfill({
         status: 200,
         contentType: 'application/json',
         body: JSON.stringify(
-          [...challengeSelections].map(([slot_id, item]) => ({
-            id: item.id,
-            challenge_progress_id: challengeProgressId,
-            slot_id,
-            product_id: item.productId,
-            selected_at: item.selectedAt,
-          })),
+          [...challengeSelections].map(([slot_id, item]) =>
+            continuationShape
+              ? { slot_id, product_id: item.productId }
+              : {
+                  id: item.id,
+                  challenge_progress_id: challengeProgressId,
+                  slot_id,
+                  product_id: item.productId,
+                  selected_at: item.selectedAt,
+                },
+          ),
         ),
       });
       return;
     }
 
     if (url.pathname === '/rest/v1/challenge_completions') {
+      const continuationShape =
+        url.searchParams.get('select') ===
+        'id,challenge_progress_id,completed_at';
       const snapshotItems = [...challengeSelections].map(([slot_id, item]) => {
         const product = discoverProducts.find(
           (candidate) => candidate.product_id === item.productId,
@@ -568,8 +637,10 @@ export async function mockAnonymousIdentity(
                 {
                   id: challengeCompletionId,
                   challenge_progress_id: challengeProgressId,
-                  completed_at: now,
-                  selected_products_snapshot: { items: snapshotItems },
+                  completed_at: '2026-07-24T12:00:00.000Z',
+                  ...(continuationShape
+                    ? {}
+                    : { selected_products_snapshot: { items: snapshotItems } }),
                 },
               ]
             : [],
@@ -796,15 +867,86 @@ export async function mockAnonymousIdentity(
         contentType: 'application/json',
         body: JSON.stringify({
           session_id: body.p_session_id,
-          feed_instance_id: feedInstanceId,
+          feed_instance_id:
+            activeSessionId === returnSessionId
+              ? returnFeedInstanceId
+              : feedInstanceId,
           max_qualified_position: qualifiedDepth,
         }),
       });
       return;
     }
 
+    if (url.pathname === '/rest/v1/rpc/record_meaningful_destination') {
+      const body = (route.request().postDataJSON() ?? {}) as {
+        p_session_id: string;
+        p_destination: string;
+        p_operation_id: string;
+      };
+      destinationWrites.push(body);
+      if (destinationWriteErrors > 0) {
+        destinationWriteErrors -= 1;
+        await route.fulfill({
+          status: 503,
+          contentType: 'application/json',
+          body: JSON.stringify({ message: 'destination write failure' }),
+        });
+        return;
+      }
+      await route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify({
+          ok: true,
+          operation_id: body.p_operation_id,
+          state_revision: destinationWrites.length,
+          data: {
+            destination: body.p_destination,
+            session_id: body.p_session_id,
+            recorded_at: now,
+          },
+        }),
+      });
+      return;
+    }
+
+    if (url.pathname === '/rest/v1/anonymous_users') {
+      await route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify([
+          {
+            last_meaningful_destination:
+              options.lastMeaningfulDestination ?? 'discover',
+          },
+        ]),
+      });
+      return;
+    }
+
+    if (url.pathname === '/rest/v1/sessions') {
+      await route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify(
+          challengeStatus === 'completed' && options.sessionMode === 'return'
+            ? [
+                {
+                  id: returnSessionId,
+                  session_number: 2,
+                  started_at: '2026-07-24T12:31:00.000Z',
+                  is_return_session: true,
+                },
+              ]
+            : [],
+        ),
+      });
+      return;
+    }
+
     if (url.pathname === '/rest/v1/saved_products') {
       savedProductRequests.push(url.search);
+      const selectedFields = url.searchParams.get('select');
       const requestsSavedAt = url.searchParams
         .get('select')
         ?.includes('saved_at');
@@ -837,9 +979,13 @@ export async function mockAnonymousIdentity(
         status: 200,
         contentType: 'application/json',
         body: JSON.stringify(
-          requestsSavedAt
-            ? rows
-            : rows.map(({ id, product_id }) => ({ id, product_id })),
+          selectedFields === 'product_id'
+            ? rows.map(({ product_id }) => ({ product_id }))
+            : selectedFields === 'id'
+              ? rows.map(({ id }) => ({ id }))
+              : requestsSavedAt
+                ? rows
+                : rows.map(({ id, product_id }) => ({ id, product_id })),
         ),
       });
       return;
@@ -1015,6 +1161,9 @@ export async function mockAnonymousIdentity(
     getQualifiedDepth: () => qualifiedDepth,
     getSavedProductRequests: () => [...savedProductRequests],
     getWardrobeErrorsServed: () => wardrobeErrorsServed,
+    getDestinationWrites: () => [...destinationWrites],
+    getActiveSessionId: () => activeSessionId,
+    getContinuationRequests: () => continuationRequests,
     resolveWardrobeQueryError: () => {
       wardrobeQueryFailing = false;
     },
@@ -1024,7 +1173,11 @@ export async function mockAnonymousIdentity(
     resolveChallengeLoadError: () => {
       challengeLoadFailing = false;
     },
+    resolveContinuationQueryError: () => {
+      continuationQueryFailing = false;
+    },
     feedInstanceId,
+    returnFeedInstanceId,
     nextCursor,
   };
 }

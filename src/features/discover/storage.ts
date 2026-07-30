@@ -23,6 +23,18 @@ export function getSessionCandidateId(): string {
   return created;
 }
 
+export function replaceSessionCandidateId(): string {
+  const created = globalThis.crypto.randomUUID();
+  window.sessionStorage.setItem(SESSION_KEY, created);
+  clearDiscoverRestoration();
+  return created;
+}
+
+export function rememberCanonicalSessionId(sessionId: string) {
+  if (!z.uuid().safeParse(sessionId).success) return;
+  window.sessionStorage.setItem(SESSION_KEY, sessionId);
+}
+
 export function readDiscoverRestoration(): DiscoverRestoration | null {
   try {
     const raw = window.sessionStorage.getItem(STORAGE_KEY);

@@ -18,6 +18,9 @@ import {
   Text,
   VisuallyHidden,
 } from '@/components/design-system/primitives';
+import type { MeaningfulDestinationService } from '@/features/continuation/destination';
+import { createBrowserMeaningfulDestinationService } from '@/features/continuation/destination-supabase';
+import { ensureCanonicalSession } from '@/features/continuation/session';
 import { getSessionCandidateId } from '@/features/discover/storage';
 import { useAnonymousIdentity } from '@/features/identity/identity-provider';
 
@@ -108,9 +111,11 @@ function StateMessage({
 export function WardrobeExperience({
   forcedService,
   forcedTelemetry,
+  forcedDestinationService,
 }: {
   forcedService?: WardrobeService;
   forcedTelemetry?: WardrobeTelemetry;
+  forcedDestinationService?: MeaningfulDestinationService;
 } = {}) {
   const identity = useAnonymousIdentity();
   const identityId =
@@ -119,6 +124,13 @@ export function WardrobeExperience({
     () => forcedService ?? createBrowserWardrobeService(),
     [forcedService],
   );
+  const destinationService = useMemo(
+    () =>
+      forcedDestinationService ??
+      (forcedService ? null : createBrowserMeaningfulDestinationService()),
+    [forcedDestinationService, forcedService],
+  );
+  const destinationOperationId = useRef(globalThis.crypto.randomUUID());
   const [state, setState] = useState<WardrobeState>({
     status: 'idle',
     items: [],
@@ -164,11 +176,20 @@ export function WardrobeExperience({
       setState({ status: 'loading', items: [] });
       setTasks({});
       const platform = window.innerWidth < 768 ? 'web_mobile' : 'web_desktop';
-      const session = await service.ensureSession({
-        sessionId: getSessionCandidateId(),
-        appVersion: '0.1.0',
-        platform,
-      });
+      const ensureSession = (sessionId: string) =>
+        service.ensureSession({
+          sessionId,
+          appVersion: '0.1.0',
+          platform,
+        });
+      const session = forcedService
+        ? await ensureSession(getSessionCandidateId())
+        : await ensureCanonicalSession(
+            ensureSession,
+            (error) =>
+              error instanceof WardrobeError &&
+              error.code === 'session_expired',
+          );
       const items = await service.load(identityId);
       if (!active || version !== requestVersion.current) return;
       const telemetry =
@@ -210,6 +231,13 @@ export function WardrobeExperience({
             properties: { entry_reason: 'primary_navigation' },
           });
         }
+        void destinationService
+          ?.record({
+            sessionId: session.session_id,
+            destination: 'wardrobe',
+            operationId: destinationOperationId.current,
+          })
+          .catch(() => undefined);
       }
       setState(
         items.length > 0
@@ -230,7 +258,15 @@ export function WardrobeExperience({
     return () => {
       active = false;
     };
-  }, [attempt, forcedTelemetry, identityId, service]);
+  }, [
+    attempt,
+    destinationService,
+    forcedDestinationService,
+    forcedService,
+    forcedTelemetry,
+    identityId,
+    service,
+  ]);
 
   const focusAfterRemoval = useCallback(
     (items: WardrobeItem[], removedIndex: number) => {

@@ -18,6 +18,12 @@ import {
   Text,
   VisuallyHidden,
 } from '@/components/design-system/primitives';
+import { ContinuationCard } from '@/features/continuation/continuation-card';
+import type { ContinuationService } from '@/features/continuation/service';
+import type { ContinuationTelemetry } from '@/features/continuation/telemetry';
+import type { MeaningfulDestinationService } from '@/features/continuation/destination';
+import { createBrowserMeaningfulDestinationService } from '@/features/continuation/destination-supabase';
+import { ensureCanonicalSession } from '@/features/continuation/session';
 import { useAnonymousIdentity } from '@/features/identity/identity-provider';
 import { TelemetryError } from '@/features/telemetry/types';
 
@@ -111,9 +117,15 @@ function StateMessage({
 export function DiscoverExperience({
   forcedService,
   forcedTelemetry,
+  forcedDestinationService,
+  forcedContinuationService,
+  forcedContinuationTelemetry,
 }: {
   forcedService?: DiscoverService;
   forcedTelemetry?: DiscoverTelemetry;
+  forcedDestinationService?: MeaningfulDestinationService;
+  forcedContinuationService?: ContinuationService;
+  forcedContinuationTelemetry?: ContinuationTelemetry;
 } = {}) {
   const identity = useAnonymousIdentity();
   const identityId =
@@ -122,6 +134,13 @@ export function DiscoverExperience({
     () => forcedService ?? createBrowserDiscoverService(),
     [forcedService],
   );
+  const destinationService = useMemo(
+    () =>
+      forcedDestinationService ??
+      (forcedService ? null : createBrowserMeaningfulDestinationService()),
+    [forcedDestinationService, forcedService],
+  );
+  const destinationOperationId = useRef(globalThis.crypto.randomUUID());
   const [state, dispatch] = useReducer(discoverReducer, initialDiscoverState);
   const [attempt, setAttempt] = useState(0);
   const [saveTasks, setSaveTasks] = useState<
@@ -172,12 +191,21 @@ export function DiscoverExperience({
     const run = async () => {
       dispatch({ type: 'RESOLVE_SESSION' });
       const platform = window.innerWidth < 768 ? 'web_mobile' : 'web_desktop';
-      const session = await service.ensureSession({
-        sessionId: getSessionCandidateId(),
-        appVersion: '0.1.0',
-        platform,
-        entryRoute: '/discover',
-      });
+      const ensureSession = (sessionId: string) =>
+        service.ensureSession({
+          sessionId,
+          appVersion: '0.1.0',
+          platform,
+          entryRoute: '/discover',
+        });
+      const session = forcedService
+        ? await ensureSession(getSessionCandidateId())
+        : await ensureCanonicalSession(
+            ensureSession,
+            (error) =>
+              error instanceof DiscoverError &&
+              error.code === 'session_expired',
+          );
       if (!active || generation !== requestGeneration.current) return;
       dispatch({ type: 'SESSION_READY', session });
 
@@ -298,6 +326,13 @@ export function DiscoverExperience({
             entry_reason: restoring ? 'restored' : 'onboarding_terminal',
           },
         });
+        void destinationService
+          ?.record({
+            sessionId: session.session_id,
+            destination: 'discover',
+            operationId: destinationOperationId.current,
+          })
+          .catch(() => undefined);
       }
       if (restoring) {
         quietDiscoverCapture(telemetry, {
@@ -334,7 +369,15 @@ export function DiscoverExperience({
     return () => {
       active = false;
     };
-  }, [attempt, forcedTelemetry, identityId, service]);
+  }, [
+    attempt,
+    destinationService,
+    forcedDestinationService,
+    forcedService,
+    forcedTelemetry,
+    identityId,
+    service,
+  ]);
 
   useEffect(() => {
     const save = () => persistRestoration();
@@ -729,6 +772,25 @@ export function DiscoverExperience({
           Explore pieces at your own pace. Save what you want to revisit.
         </Text>
       </header>
+
+      {identityId &&
+      state.session &&
+      (!forcedService || forcedContinuationService) ? (
+        <div
+          className={
+            state.session.is_return_session
+              ? styles.continuationSlot
+              : undefined
+          }
+        >
+          <ContinuationCard
+            identityId={identityId}
+            session={state.session}
+            forcedService={forcedContinuationService}
+            forcedTelemetry={forcedContinuationTelemetry}
+          />
+        </div>
+      ) : null}
 
       {initialLoading ? <FeedSkeleton /> : null}
 
