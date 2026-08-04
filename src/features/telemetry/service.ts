@@ -23,7 +23,13 @@ export type TelemetryServiceOptions = {
   clock?: () => Date;
   createEventId?: () => string;
   initialClientSequence?: number;
+  persistence?: TelemetryQueuePersistence;
 };
+
+export interface TelemetryQueuePersistence {
+  read(): Promise<AnyTelemetryEvent[]>;
+  write(events: AnyTelemetryEvent[]): Promise<void>;
+}
 
 export interface TelemetryService {
   capture<Name extends TelemetryEventName>(
@@ -41,6 +47,8 @@ export class BufferedTelemetryService implements TelemetryService {
   private clientSequence: number;
   private pendingFlush: Promise<TelemetryBatchResult> | null = null;
   private disposed = false;
+  private restored = false;
+  private restorePromise: Promise<void> | null = null;
 
   constructor(private readonly options: TelemetryServiceOptions) {
     this.clock = options.clock ?? (() => new Date());
@@ -52,7 +60,9 @@ export class BufferedTelemetryService implements TelemetryService {
   async capture<Name extends TelemetryEventName>(
     capture: TelemetryCapture<Name>,
   ): Promise<TelemetryItemResult> {
+    await this.restore();
     const [event] = this.enqueue([capture as AnyTelemetryCapture]);
+    await this.persist();
     const result = await this.flush();
     const item = result.results.find(
       (candidate) => candidate.event_id === event.event_id,
@@ -72,7 +82,9 @@ export class BufferedTelemetryService implements TelemetryService {
   async captureBatch(
     captures: AnyTelemetryCapture[],
   ): Promise<TelemetryBatchResult> {
+    await this.restore();
     const events = this.enqueue(captures);
+    await this.persist();
     const ids = new Set(events.map((event) => event.event_id));
     const result = await this.flush();
 
@@ -83,23 +95,22 @@ export class BufferedTelemetryService implements TelemetryService {
     };
   }
 
-  flush(): Promise<TelemetryBatchResult> {
+  async flush(): Promise<TelemetryBatchResult> {
+    await this.restore();
     if (this.disposed) {
-      return Promise.reject(
-        new TelemetryError(
-          'transport_unavailable',
-          false,
-          'The telemetry service has been disposed.',
-        ),
+      throw new TelemetryError(
+        'transport_unavailable',
+        false,
+        'The telemetry service has been disposed.',
       );
     }
 
     if (this.pendingFlush) {
-      return this.pendingFlush;
+      return await this.pendingFlush;
     }
 
     if (this.queue.length === 0) {
-      return Promise.resolve({ results: [] });
+      return { results: [] };
     }
 
     const batch = this.queue.slice(0, TELEMETRY_MAX_BATCH_SIZE);
@@ -124,6 +135,7 @@ export class BufferedTelemetryService implements TelemetryService {
         }
 
         this.queue.splice(0, batch.length);
+        void this.persist();
         return result;
       })
       .catch((error: unknown) => {
@@ -142,7 +154,7 @@ export class BufferedTelemetryService implements TelemetryService {
         this.pendingFlush = null;
       });
 
-    return this.pendingFlush;
+    return await this.pendingFlush;
   }
 
   dispose(): void {
@@ -202,5 +214,40 @@ export class BufferedTelemetryService implements TelemetryService {
 
     this.clientSequence += 1;
     return validation.event;
+  }
+
+  private restore() {
+    if (this.restored || !this.options.persistence) return Promise.resolve();
+    this.restorePromise ??= this.options.persistence
+      .read()
+      .then((events) => {
+        const existing = new Set(this.queue.map((event) => event.event_id));
+        const restored = events.filter(
+          (event) =>
+            event.session_id === this.options.session.session_id &&
+            !existing.has(event.event_id),
+        );
+        this.queue.unshift(
+          ...restored.slice(
+            0,
+            Math.max(0, TELEMETRY_MAX_BATCH_SIZE - this.queue.length),
+          ),
+        );
+        this.clientSequence = Math.max(
+          this.clientSequence,
+          ...restored.map((event) => event.client_sequence + 1),
+        );
+        this.restored = true;
+      })
+      .catch(() => {
+        this.restored = true;
+      });
+    return this.restorePromise;
+  }
+
+  private persist() {
+    return (
+      this.options.persistence?.write([...this.queue]) ?? Promise.resolve()
+    );
   }
 }

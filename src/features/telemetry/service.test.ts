@@ -100,6 +100,54 @@ describe('BufferedTelemetryService', () => {
     );
   });
 
+  it('restores only the active session and advances its client sequence', async () => {
+    const writes: unknown[][] = [];
+    const prior = {
+      event_id: '10000000-0000-4000-8000-000000000010',
+      event_name: 'session_started' as const,
+      event_version: 1 as const,
+      occurred_at: '2026-07-24T12:00:00.000Z',
+      session_id: session.session_id,
+      platform: session.platform,
+      surface: 'app_boot' as const,
+      client_sequence: 7,
+      properties: capture.properties,
+      context: context(),
+    };
+    const foreign = {
+      ...prior,
+      event_id: '10000000-0000-4000-8000-000000000011',
+      session_id: '20000000-0000-4000-8000-000000000099',
+    };
+    const send = vi
+      .fn<TelemetryTransport['send']>()
+      .mockRejectedValue(new Error('offline'));
+    const service = new BufferedTelemetryService({
+      session,
+      context,
+      transport: { send },
+      clock: () => new Date('2026-07-24T12:00:00.000Z'),
+      createEventId: () => '10000000-0000-4000-8000-000000000012',
+      persistence: {
+        read: async () => [prior, foreign],
+        write: async (events) => {
+          writes.push(events);
+        },
+      },
+    });
+
+    await expect(service.capture(capture)).rejects.toMatchObject({
+      code: 'transport_unavailable',
+    });
+    const sent = send.mock.calls[0]?.[0].events ?? [];
+    expect(sent.map((event) => event.event_id)).toEqual([
+      prior.event_id,
+      '10000000-0000-4000-8000-000000000012',
+    ]);
+    expect(sent[1]?.client_sequence).toBe(8);
+    expect(JSON.stringify(writes)).not.toContain(foreign.session_id);
+  });
+
   it('enforces a bounded 100-event queue', async () => {
     const service = new BufferedTelemetryService({
       session,

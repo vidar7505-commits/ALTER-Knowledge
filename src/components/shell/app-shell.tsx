@@ -1,12 +1,13 @@
 'use client';
 
 import type { ReactNode } from 'react';
-import { useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { usePathname } from 'next/navigation';
 
 import { Button, Heading, Text } from '@/components/design-system/primitives';
 import { useAnonymousIdentity } from '@/features/identity/identity-provider';
 import type { IdentityState } from '@/features/identity/types';
+import { RecoveryBanner } from '@/features/recovery/recovery-banner';
 
 import { BottomNavigation, DesktopRail } from './primary-navigation';
 import styles from './shell.module.css';
@@ -131,6 +132,11 @@ export function ApplicationShellView({
   retry: () => void;
   connectivity?: ConnectivityState;
 }) {
+  const [recoveryRevision, setRecoveryRevision] = useState(0);
+  const handleCanonicalChange = useCallback(
+    () => setRecoveryRevision((revision) => revision + 1),
+    [],
+  );
   if (state.status === 'idle' || state.status === 'loading') {
     return (
       <ShellGate connectivity={connectivity}>
@@ -197,10 +203,17 @@ export function ApplicationShellView({
         <header className={styles.mobileHeader}>
           <span className={styles.mobileWordmark}>A L T E R .</span>
         </header>
-        <ConnectivityBanner state={connectivity} />
+        {connectivity === 'restored' ? (
+          <ConnectivityBanner state={connectivity} />
+        ) : null}
+        <RecoveryBanner
+          identityId={state.anonymousUserId}
+          online={connectivity !== 'offline'}
+          onCanonicalChange={handleCanonicalChange}
+        />
         <RouteFocusManager />
         <main id="main-content" className={styles.mainContent} tabIndex={-1}>
-          {children}
+          <div key={recoveryRevision}>{children}</div>
         </main>
       </div>
     </div>

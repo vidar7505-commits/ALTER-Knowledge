@@ -6,6 +6,7 @@ import type {
   TelemetryEventName,
 } from '@/features/telemetry/contracts';
 import { BufferedTelemetryService } from '@/features/telemetry/service';
+import { createBrowserTelemetryPersistence } from '@/features/telemetry/persistence';
 import { createFetchTelemetryTransport } from '@/features/telemetry/transport';
 import {
   TelemetryError,
@@ -70,6 +71,9 @@ function createService(
     context,
     transport: transport(),
     createEventId: eventId ? () => eventId : undefined,
+    persistence: createBrowserTelemetryPersistence(
+      `${sessionId}:discover:${eventId ?? 'main'}`,
+    ),
   });
 }
 

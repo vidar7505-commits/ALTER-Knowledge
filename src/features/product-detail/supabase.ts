@@ -6,6 +6,7 @@ import {
   SaveEnvelopeSchema,
 } from '@/features/discover/types';
 import { DiscoverError } from '@/features/discover/types';
+import { executeRecoverableMutation } from '@/features/recovery/runtime';
 
 type RpcError = { code?: string; message: string };
 
@@ -42,21 +43,40 @@ export class SupabaseProductDetailDataSource {
     productId: string;
     operationId: string;
   }): Promise<unknown> {
-    return this.rpc('save_product', {
-      p_product_id: input.productId,
-      p_operation_id: input.operationId,
-      p_source_surface: 'product_detail',
-    });
+    return executeRecoverableMutation(
+      {
+        kind: 'save_product',
+        operationId: input.operationId,
+        payload: {
+          productId: input.productId,
+          sourceSurface: 'product_detail',
+        },
+      },
+      () =>
+        this.rpc('save_product', {
+          p_product_id: input.productId,
+          p_operation_id: input.operationId,
+          p_source_surface: 'product_detail',
+        }),
+    );
   }
 
   async removeProduct(input: {
     savedProductId: string;
     operationId: string;
   }): Promise<unknown> {
-    return this.rpc('remove_product', {
-      saved_product_id: input.savedProductId,
-      operation_id: input.operationId,
-    });
+    return executeRecoverableMutation(
+      {
+        kind: 'remove_product',
+        operationId: input.operationId,
+        payload: { savedProductId: input.savedProductId },
+      },
+      () =>
+        this.rpc('remove_product', {
+          saved_product_id: input.savedProductId,
+          operation_id: input.operationId,
+        }),
+    );
   }
 
   private async rpc(name: string, parameters: Record<string, unknown>) {

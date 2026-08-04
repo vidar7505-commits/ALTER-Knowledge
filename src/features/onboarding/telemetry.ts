@@ -1,4 +1,5 @@
 import { BufferedTelemetryService } from '@/features/telemetry/service';
+import { createBrowserTelemetryPersistence } from '@/features/telemetry/persistence';
 import { createFetchTelemetryTransport } from '@/features/telemetry/transport';
 import type {
   TelemetryCapture,
@@ -44,9 +45,10 @@ export function createBrowserOnboardingTelemetry(): OnboardingTelemetry {
     };
   }
 
+  const canonicalSessionId = sessionId();
   service ??= new BufferedTelemetryService({
     session: {
-      session_id: sessionId(),
+      session_id: canonicalSessionId,
       platform: window.innerWidth < 768 ? 'web_mobile' : 'web_desktop',
       entry_route: window.location.pathname,
     },
@@ -57,6 +59,9 @@ export function createBrowserOnboardingTelemetry(): OnboardingTelemetry {
         return data.session?.access_token ?? null;
       },
     }),
+    persistence: createBrowserTelemetryPersistence(
+      `${canonicalSessionId}:onboarding`,
+    ),
   });
   return service;
 }

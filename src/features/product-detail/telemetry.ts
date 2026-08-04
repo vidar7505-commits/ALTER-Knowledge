@@ -6,6 +6,7 @@ import type {
   TelemetryEventName,
 } from '@/features/telemetry/contracts';
 import { BufferedTelemetryService } from '@/features/telemetry/service';
+import { createBrowserTelemetryPersistence } from '@/features/telemetry/persistence';
 import { createFetchTelemetryTransport } from '@/features/telemetry/transport';
 import type { TelemetryItemResult } from '@/features/telemetry/types';
 import { getBrowserSupabaseClient } from '@/lib/supabase/browser';
@@ -55,6 +56,9 @@ function createService(
     },
     context,
     transport: transport(),
+    persistence: createBrowserTelemetryPersistence(
+      `${sessionId}:product-detail:${productId}`,
+    ),
   });
 }
 

@@ -1,6 +1,7 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
 
 import { getBrowserSupabaseClient } from '@/lib/supabase/browser';
+import { executeRecoverableMutation } from '@/features/recovery/runtime';
 
 import {
   WardrobeService,
@@ -69,18 +70,37 @@ export class SupabaseWardrobeDataSource implements WardrobeDataSource {
   }
 
   removeProduct(input: { savedProductId: string; operationId: string }) {
-    return this.rpc('remove_product', {
-      saved_product_id: input.savedProductId,
-      operation_id: input.operationId,
-    });
+    return executeRecoverableMutation(
+      {
+        kind: 'remove_product',
+        operationId: input.operationId,
+        payload: { savedProductId: input.savedProductId },
+      },
+      () =>
+        this.rpc('remove_product', {
+          saved_product_id: input.savedProductId,
+          operation_id: input.operationId,
+        }),
+    );
   }
 
   saveProduct(input: { productId: string; operationId: string }) {
-    return this.rpc('save_product', {
-      p_product_id: input.productId,
-      p_operation_id: input.operationId,
-      p_source_surface: 'wardrobe',
-    });
+    return executeRecoverableMutation(
+      {
+        kind: 'save_product',
+        operationId: input.operationId,
+        payload: {
+          productId: input.productId,
+          sourceSurface: 'wardrobe',
+        },
+      },
+      () =>
+        this.rpc('save_product', {
+          p_product_id: input.productId,
+          p_operation_id: input.operationId,
+          p_source_surface: 'wardrobe',
+        }),
+    );
   }
 
   private async rpc(name: string, parameters: Record<string, unknown>) {

@@ -3,6 +3,7 @@ import type { SupabaseClient } from '@supabase/supabase-js';
 import { createBrowserCatalogService } from '@/features/catalog/supabase';
 import { createBrowserWardrobeService } from '@/features/wardrobe/supabase';
 import { getBrowserSupabaseClient } from '@/lib/supabase/browser';
+import { executeRecoverableMutation } from '@/features/recovery/runtime';
 
 import { ChallengeService, type ChallengeDataSource } from './service';
 import { ChallengeError } from './types';
@@ -95,36 +96,79 @@ export class SupabaseChallengeDataSource implements ChallengeDataSource {
   }
 
   start(challengeId: string, operationId: string) {
-    return this.rpc('start_challenge', {
-      p_challenge_id: challengeId,
-      p_operation_id: operationId,
-    });
+    return executeRecoverableMutation(
+      {
+        kind: 'start_challenge',
+        operationId,
+        payload: { challengeId },
+      },
+      () =>
+        this.rpc('start_challenge', {
+          p_challenge_id: challengeId,
+          p_operation_id: operationId,
+        }),
+    );
   }
 
   select(input: Parameters<ChallengeDataSource['select']>[0]) {
-    return this.rpc('select_challenge_item', {
-      challenge_progress_id: input.progressId,
-      slot_id: input.slotId,
-      product_id: input.productId,
-      expected_state_revision: input.expectedRevision,
-      operation_id: input.operationId,
-    });
+    return executeRecoverableMutation(
+      {
+        kind: 'select_challenge_item',
+        operationId: input.operationId,
+        payload: {
+          progressId: input.progressId,
+          slotId: input.slotId,
+          productId: input.productId,
+          expectedRevision: input.expectedRevision,
+        },
+      },
+      () =>
+        this.rpc('select_challenge_item', {
+          challenge_progress_id: input.progressId,
+          slot_id: input.slotId,
+          product_id: input.productId,
+          expected_state_revision: input.expectedRevision,
+          operation_id: input.operationId,
+        }),
+    );
   }
 
   remove(input: Parameters<ChallengeDataSource['remove']>[0]) {
-    return this.rpc('remove_challenge_item', {
-      challenge_progress_item_id: input.progressItemId,
-      expected_state_revision: input.expectedRevision,
-      operation_id: input.operationId,
-    });
+    return executeRecoverableMutation(
+      {
+        kind: 'remove_challenge_item',
+        operationId: input.operationId,
+        payload: {
+          progressItemId: input.progressItemId,
+          expectedRevision: input.expectedRevision,
+        },
+      },
+      () =>
+        this.rpc('remove_challenge_item', {
+          challenge_progress_item_id: input.progressItemId,
+          expected_state_revision: input.expectedRevision,
+          operation_id: input.operationId,
+        }),
+    );
   }
 
   complete(input: Parameters<ChallengeDataSource['complete']>[0]) {
-    return this.rpc('complete_challenge', {
-      challenge_progress_id: input.progressId,
-      expected_state_revision: input.expectedRevision,
-      operation_id: input.operationId,
-    });
+    return executeRecoverableMutation(
+      {
+        kind: 'complete_challenge',
+        operationId: input.operationId,
+        payload: {
+          progressId: input.progressId,
+          expectedRevision: input.expectedRevision,
+        },
+      },
+      () =>
+        this.rpc('complete_challenge', {
+          challenge_progress_id: input.progressId,
+          expected_state_revision: input.expectedRevision,
+          operation_id: input.operationId,
+        }),
+    );
   }
 
   private async query(

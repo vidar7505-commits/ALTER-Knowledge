@@ -6,7 +6,7 @@
 
 ## Status
 
-Ready
+Configured but awaiting CI validation
 
 P10 remains Complete. P11A remains Complete. P11 remains Complete. P12 remains
 Complete. P13 remains Complete after verified GitHub application validation.
@@ -19,7 +19,9 @@ GitHub Database infrastructure validation of implementation commit
 `4bee1b5618d798930b6b8665cbb2c45839befe5c` and test-fixture correction commit
 `38494158aba0584d1a5816b3d8c17028d09319d8`. P15 is Complete after verified
 GitHub Application CI validation of implementation commit
-`d5edf3bf6a66dfd469386b93c0d7586ff7320b3b`. P16 is Ready but not implemented.
+`d5edf3bf6a66dfd469386b93c0d7586ff7320b3b`. P16 is configured
+locally with all required local gates passed and is awaiting authoritative
+GitHub Application CI validation.
 
 P15A adds one forward-only migration correcting only the strict 30-minute
 boundary in `public.ensure_session`. P14A previously added one forward-only
@@ -93,7 +95,69 @@ Production deployment: not run.
 - Scope: queue, retry, and corrupt-state handling
 - Acceptance: offline and interrupted mutation behavior
 - Commit boundary: `feat(recovery)`
-- Status: Ready but not implemented.
+- Status: Configured but awaiting CI validation.
+
+## P16 implementation
+
+- Adds a versioned, bounded, identity-scoped IndexedDB mutation queue for the
+  six RPC mutations whose existing server contracts provide stable operation
+  IDs, owner-derived authorization, deterministic replay, and canonical
+  responses: Product save/remove and Challenge start/select/remove/complete.
+- Preserves each operation ID through offline retention, reload, transient
+  failure, an ambiguous post-dispatch response loss, and replay. A queue record
+  is removed only after a matching canonical success response.
+- Excludes reads, identity/bootstrap, session creation, feed pagination,
+  navigation/restoration, continuation resolution, and session-scoped
+  meaningful-destination recording.
+- Uses strict Zod parsing, a closed mutation allowlist, per-item and per-queue
+  byte limits, FIFO sequence numbers, bounded retries, one re-entrant-safe
+  processor per active identity, and deterministic corruption recovery.
+- Rejects foreign-identity, non-null session, conflicting duplicate operation,
+  duplicate-sequence, malformed, unsupported-version, and oversized records.
+- Integrates one accessible global recovery surface without duplicating the
+  existing shell connectivity banner. Loaded content remains usable offline;
+  pending state is not presented as canonical success.
+- Upgrades the existing P07 telemetry buffer with bounded, session-keyed
+  IndexedDB persistence. It does not create a second telemetry authority or add
+  events/properties.
+- Local validation passed for formatting, lint with zero warnings/errors,
+  typecheck, and the full Vitest suite (38 files / 202 tests).
+- The unchanged production build passed and generated 10 routes once direct
+  network access was available. The initial Google Fonts failure was a
+  transient restricted-environment failure against the pre-existing
+  `next/font/google` dependency, not a P16 regression or deterministic
+  offline-build defect.
+- Dedicated P16 unit/integration validation passed: 4 files / 45 tests.
+- Dedicated functional P16 Playwright passed: 3/3; Chromium; one worker. The
+  interrupted post-commit response replay reused the original operation ID,
+  returned the canonical result, reconciled once, and removed exactly one queue
+  item.
+- Five-viewport/15-state visual certification passed: 75 artifacts at 320×700,
+  390×844, 768×1024, 1200×900, and 1440×1024. Automated geometry, banner/shell
+  uniqueness, overflow, content/navigation/rail clearance, touch-target,
+  focus-retention, focus-ring, readable-copy, and reduced-motion assertions
+  passed; artifact inspection passed.
+- Visual certification found and corrected one recovery-banner flex defect:
+  long copy plus count and retry could shrink or clip the retry action. The
+  message now wraps while count and retry remain non-shrinking; the visual suite
+  asserts banner-local overflow and retry viewport bounds.
+- Full Playwright passed: 73/73; Chromium; one worker. The runner returned
+  normally after 4.7 minutes.
+- The prior managed-server hang was Playwright 1.61 Windows teardown attempting
+  restricted `taskkill /T /F`, then waiting for the child close event. An
+  unchanged permitted run returned normally, proving it was sandbox process-tree
+  handling rather than an application timer/listener, queue drain, IndexedDB
+  promise, or E2E mock leak.
+- Post-Playwright inspection found no ALTER-related Node process, Playwright or
+  managed Next.js process, or port-3000 listener. `git diff --check` passed.
+- Database changes: None.
+- New migrations: None.
+- Cloud migrations deployed: None.
+- Hosted development schema updated: No.
+- Remote reset: not run.
+- Remote migration push: not run.
+- Project linking: not run.
+- Production deployment: not run.
 
 ## P15C implementation
 

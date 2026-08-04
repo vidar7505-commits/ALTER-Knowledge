@@ -89,6 +89,7 @@ export async function mockAnonymousIdentity(
     lastMeaningfulDestination?: 'discover' | 'wardrobe' | 'challenge';
     continuationQueryErrorOnce?: boolean;
     destinationWriteErrorOnce?: boolean;
+    mutationResponseInterruptedAfterCommitOnce?: boolean;
   } = {},
 ) {
   let onboardingStatus =
@@ -102,6 +103,9 @@ export async function mockAnonymousIdentity(
   let paginationErrorRemaining = options.paginationErrorOnce ? 1 : 0;
   let productDetailErrorRemaining = options.productDetailErrorOnce ? 1 : 0;
   let mutationErrorRemaining = options.mutationErrorOnce ? 1 : 0;
+  let interruptedMutationResponses =
+    options.mutationResponseInterruptedAfterCommitOnce ? 1 : 0;
+  const mutationRequests: Array<{ kind: string; operationId: string }> = [];
   let wardrobeQueryFailing = options.wardrobeQueryErrorOnce ?? false;
   let wardrobeProductQueryFailing = options.wardrobeProductQueryError ?? false;
   const appendCursors: Array<string | null> = [];
@@ -1005,11 +1009,20 @@ export async function mockAnonymousIdentity(
         p_product_id: string;
         p_operation_id: string;
       };
+      mutationRequests.push({
+        kind: 'save_product',
+        operationId: body.p_operation_id,
+      });
       const savedProductId =
         savedProducts.get(body.p_product_id) ??
         `70000000-0000-4000-8000-${String(savedProducts.size + 1).padStart(12, '0')}`;
       savedProducts.set(body.p_product_id, savedProductId);
       savedAtByProduct.set(body.p_product_id, now);
+      if (interruptedMutationResponses > 0) {
+        interruptedMutationResponses -= 1;
+        await route.abort('failed');
+        return;
+      }
       await route.fulfill({
         status: 200,
         contentType: 'application/json',
@@ -1040,6 +1053,10 @@ export async function mockAnonymousIdentity(
         saved_product_id: string;
         operation_id: string;
       };
+      mutationRequests.push({
+        kind: 'remove_product',
+        operationId: body.operation_id,
+      });
       const product = [...savedProducts].find(
         ([, id]) => id === body.saved_product_id,
       );
@@ -1160,6 +1177,7 @@ export async function mockAnonymousIdentity(
     getTelemetryEvents: () => [...telemetryEvents],
     getQualifiedDepth: () => qualifiedDepth,
     getSavedProductRequests: () => [...savedProductRequests],
+    getMutationRequests: () => [...mutationRequests],
     getWardrobeErrorsServed: () => wardrobeErrorsServed,
     getDestinationWrites: () => [...destinationWrites],
     getActiveSessionId: () => activeSessionId,
