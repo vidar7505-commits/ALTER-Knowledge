@@ -37,16 +37,18 @@ jobs:
         run: npm ci
 
       - name: Verify repository-local Supabase CLI
-        run: npx supabase --version
+        run: npx --no-install supabase --version
 
       - name: Start disposable local Supabase stack
-        run: npx supabase start
+        run: >-
+          npx --no-install supabase start --exclude
+          analytics,edge-runtime,functions,imgproxy,inbucket,kong,meta,realtime,rest,storage,studio,vector
 
       - name: Reset database from committed sources
-        run: npx supabase db reset --local
+        run: npx --no-install supabase db reset --local
 
       - name: Lint database
-        run: npx supabase db lint --local --fail-on warning
+        run: npx --no-install supabase db lint --local --fail-on warning
 
       - name: Detect database tests
         id: database-tests
@@ -61,7 +63,110 @@ jobs:
 
       - name: Run database tests
         if: steps.database-tests.outputs.present == 'true'
-        run: npx supabase test db
+        run: npx --no-install supabase test db
+
+      - name: Diagnose database infrastructure failure
+        if: failure()
+        shell: bash
+        run: |
+          echo '::group::Supabase CLI version'
+          if ! npx --no-install supabase --version; then
+            echo 'Supabase CLI version command failed.'
+          fi
+          echo '::endgroup::'
+
+          echo '::group::Docker containers'
+          if ! docker ps -a; then
+            echo 'docker ps -a failed.'
+          fi
+          echo '::endgroup::'
+
+          echo '::group::Supabase container health'
+          mapfile -t containers < <(
+            docker ps -aq --filter 'name=supabase_' 2>/dev/null
+          )
+          if ((${#containers[@]})); then
+            if ! docker inspect --format \
+              '{{.Name}} state={{.State.Status}} health={{if .State.Health}}{{.State.Health.Status}}{{else}}not-configured{{end}} exit={{.State.ExitCode}} error={{json .State.Error}}' \
+              "${containers[@]}"; then
+              echo 'Container state inspection failed.'
+            fi
+            if ! docker inspect --format \
+              '{{.Name}} health={{json .State.Health}}' \
+              "${containers[@]}"; then
+              echo 'Container health inspection failed.'
+            fi
+          else
+            echo 'No local Supabase containers were found.'
+          fi
+          echo '::endgroup::'
+
+          print_container_logs() {
+            local container_id="$1"
+            local label="$2"
+            echo "::group::${label} logs"
+            if ! docker logs --tail 200 "$container_id" 2>&1; then
+              echo "Could not read logs for ${label}."
+            fi
+            echo '::endgroup::'
+          }
+
+          postgres_found=false
+          for container_id in "${containers[@]}"; do
+            if container_name="$(docker inspect --format '{{.Name}}' "$container_id" 2>/dev/null)"; then
+              container_name="${container_name#/}"
+              if [[ "$container_name" == supabase_db_* ]]; then
+                postgres_found=true
+                print_container_logs "$container_id" "Postgres (${container_name})"
+              fi
+            else
+              echo "Could not identify Supabase container ${container_id}."
+            fi
+          done
+          if [[ "$postgres_found" == false ]]; then
+            echo 'No local Supabase Postgres container was found.'
+          fi
+
+          for container_id in "${containers[@]}"; do
+            if ! container_name="$(docker inspect --format '{{.Name}}' "$container_id" 2>/dev/null)"; then
+              echo "Could not identify Supabase container ${container_id}."
+              continue
+            fi
+            container_name="${container_name#/}"
+            if ! state="$(docker inspect --format '{{.State.Status}}' "$container_id" 2>/dev/null)"; then
+              echo "Could not read state for ${container_name}."
+              continue
+            fi
+            if ! health="$(docker inspect --format '{{if .State.Health}}{{.State.Health.Status}}{{else}}not-configured{{end}}' "$container_id" 2>/dev/null)"; then
+              echo "Could not read health for ${container_name}."
+              continue
+            fi
+            if [[ "$health" == unhealthy || "$state" != running ]]; then
+              print_container_logs \
+                "$container_id" \
+                "Unhealthy/non-running ${container_name}"
+            fi
+          done
+
+          echo '::group::Supabase status availability (values redacted)'
+          if status_json="$(npx --no-install supabase status --output json 2>/dev/null)"; then
+            if ! printf '%s' "$status_json" | node -e '
+              const fs = require("node:fs");
+              const status = JSON.parse(fs.readFileSync(0, "utf8"));
+              const availability = Object.fromEntries(
+                Object.entries(status).map(([key, value]) => [
+                  key,
+                  value !== null && value !== "",
+                ]),
+              );
+              console.log(JSON.stringify(availability, null, 2));
+            '; then
+              echo 'Supabase status could not be safely summarized.'
+            fi
+          else
+            echo 'Supabase status is unavailable.'
+          fi
+          echo '::endgroup::'
 
       - name: Check formatting
         run: npm run format:check
@@ -80,4 +185,4 @@ jobs:
 
       - name: Stop disposable local Supabase stack
         if: always()
-        run: npx supabase stop --no-backup
+        run: npx --no-install supabase stop --no-backup
